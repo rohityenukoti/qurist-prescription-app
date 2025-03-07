@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Prescription Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Digital Prescription</h1>
+        
+        <form id="prescriptionForm">
+            <div class="form-section">
+                <h2>Doctor Information</h2>
+                <div class="form-group">
+                    <label for="doctorName">Doctor Name:</label>
+                    <input type="text" id="doctorName" required>
+                </div>
+                <div class="form-group">
+                    <label for="doctorLicense">License Number:</label>
+                    <input type="text" id="doctorLicense" required>
+                </div>
+                <div class="form-group">
+                    <label for="clinicName">Clinic Name:</label>
+                    <input type="text" id="clinicName" required>
+                </div>
+                <div class="form-group">
+                    <label for="clinicAddress">Clinic Address:</label>
+                    <textarea id="clinicAddress" required></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Patient Information</h2>
+                <div class="form-group">
+                    <label for="patientName">Patient Name:</label>
+                    <input type="text" id="patientName" required>
+                </div>
+                <div class="form-group">
+                    <label for="patientAge">Age:</label>
+                    <input type="number" id="patientAge" required>
+                </div>
+                <div class="form-group">
+                    <label for="patientGender">Gender:</label>
+                    <select id="patientGender" required>
+                        <option value="">Select</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="patientAddress">Address:</label>
+                    <textarea id="patientAddress" required></textarea>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h2>Prescription Details</h2>
+                <div class="form-group">
+                    <label for="diagnosis">Diagnosis:</label>
+                    <input type="text" id="diagnosis" required>
+                </div>
+                
+                <div id="medicationsContainer">
+                    <div class="medication-entry">
+                        <div class="form-group">
+                            <label for="medication1">Medication:</label>
+                            <input type="text" id="medication1" class="medication-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="dosage1">Dosage:</label>
+                            <input type="text" id="dosage1" class="medication-dosage" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="frequency1">Frequency:</label>
+                            <input type="text" id="frequency1" class="medication-frequency" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="duration1">Duration:</label>
+                            <input type="text" id="duration1" class="medication-duration" required>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="button" id="addMedicationBtn">+ Add Another Medication</button>
+                
+                <div class="form-group">
+                    <label for="notes">Additional Notes:</label>
+                    <textarea id="notes"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="date">Date:</label>
+                    <input type="date" id="date" required>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" id="generatePdfBtn">Generate Prescription</button>
+                <button type="reset">Clear Form</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html> 
