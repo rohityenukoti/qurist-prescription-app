@@ -122,47 +122,27 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'normal');
         
         // First group: Name
-        doc.text(`Name`, 20, 45);
-        doc.text(`${patientName}`, 40, 45);
+        doc.text(`Name:`, 20, 45);
+        doc.text(`${patientName}`, 37, 45);
         
         // Second group: Age
-        doc.text(`Age`, 100, 45);
-        doc.text(`${patientAge}`, 115, 45);
+        doc.text(`Age:`, 105, 45);
+        doc.text(`${patientAge}`, 117, 45);
         
         // Third group: Sex
-        doc.text(`Sex`, 125, 45);
-        doc.text(`${patientGender}`, 135, 45);
+        doc.text(`Sex:`, 130, 45);
+        doc.text(`${patientGender}`, 142, 45);
         
         // Fourth group: Date
-        doc.text(`Date`, 180, 45);
-        doc.text(`${formatDate(date)}`, 190, 45);
+        doc.text(`Date:`, 165, 45);
+        doc.text(`${formatDate(date)}`, 177, 45);
         
         // Draw underlines with adjusted widths
         doc.setLineWidth(0.5);
-        doc.line(35, 46, 95, 46);   // Name underline
-        doc.line(110, 46, 120, 46);  // Age underline
-        doc.line(130, 46, 160, 46);  // Gender underline
-        doc.line(190, 46, 240, 46);  // Date underline
-
-        // Add prescription title
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.text('PRESCRIPTION', 105, 65, { align: 'center' });
-        
-        // Add date
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Date: ${formatDate(date)}`, 170, 45, { align: 'right' });
-        
-        // Add patient info
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'bold');
-        doc.text('Patient Information:', 20, 80);
-        
-        doc.setFont('helvetica', 'normal');
-        doc.text(`Name: ${patientName}`, 20, 90);
-        doc.text(`Age: ${patientAge}`, 20, 97);
-        doc.text(`Gender: ${patientGender}`, 20, 104);
+        doc.line(35, 46, 100, 46);   // Name underline
+        doc.line(115, 46, 125, 46);  // Age underline
+        doc.line(140, 46, 160, 46);  // Gender underline
+        doc.line(175, 46, 205, 46);  // Date underline
         
         // Add diagnosis
         doc.setFont('helvetica', 'bold');
