@@ -563,24 +563,24 @@ document.addEventListener('DOMContentLoaded', function() {
 function drawDoctorSeal(doc, x, y, doctorInfo) {
     // Create a temporary canvas with higher resolution
     const canvas = document.createElement('canvas');
-    canvas.width = 400;  // Increased from 100
-    canvas.height = 400; // Increased from 100
+    canvas.width = 400;
+    canvas.height = 400;
     const ctx = canvas.getContext('2d');
     
     // Clear canvas and set center point
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.translate(200, 200); // Adjusted for new canvas size
+    ctx.translate(200, 200);
     
     // Draw circles with adjusted sizes
     ctx.strokeStyle = '#003366';
-    ctx.lineWidth = 8; // Increased from 2
+    ctx.lineWidth = 8;
     ctx.beginPath();
-    ctx.arc(0, 0, 160, 0, Math.PI * 2); // Increased from 40
+    ctx.arc(0, 0, 160, 0, Math.PI * 2);
     ctx.stroke();
     
-    ctx.lineWidth = 4; // Increased from 1
+    ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(0, 0, 140, 0, Math.PI * 2); // Increased from 35
+    ctx.arc(0, 0, 140, 0, Math.PI * 2);
     ctx.stroke();
     
     // Apply rotation
@@ -590,12 +590,11 @@ function drawDoctorSeal(doc, x, y, doctorInfo) {
     ctx.fillStyle = '#003366';
     ctx.textAlign = 'center';
     
-    // Doctor name at the top
-    ctx.font = 'bold 28px Arial'; // Increased from 7px
-    ctx.fillText(doctorInfo.name, 0, -60); // Adjusted position
+    ctx.font = 'bold 26px Arial';
+    ctx.fillText(doctorInfo.name, 0, -40);
     
     // Registration info
-    ctx.font = '20px Arial'; // Increased from 5px
+    ctx.font = '20px Arial';
     ctx.fillText('Certified Medical Practitioner', 0, 0);
     ctx.fillText(`Reg No: ${doctorInfo.regNo}`, 0, 40);
     ctx.fillText('Hemp Health Pvt Ltd', 0, 80);
