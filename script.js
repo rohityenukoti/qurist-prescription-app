@@ -82,7 +82,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const patientAge = document.getElementById('patientAge').value;
         const patientGender = document.getElementById('patientGender').value;
         
-        const diagnosis = document.getElementById('diagnosis').value;
+        const complaints = document.getElementById('complaints').value;
+        const comorbidities = document.getElementById('comorbidities').value;
+        const ongoingMedications = document.getElementById('ongoingMedications').value;
         const notes = document.getElementById('notes').value;
         const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
         
@@ -176,15 +178,34 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFontSize(10);
         doc.text(selectedDoctor.designation, 145, 65);
         
-        // Add diagnosis
+        // Add complaints
         doc.setFont('helvetica', 'bold');
-        doc.text('Diagnosis:', 20, 125);
+        doc.text('Complaints:', 20, 85);
         doc.setFont('helvetica', 'normal');
-        doc.text(diagnosis, 70, 125);
+        doc.text(complaints, 20, 92, { maxWidth: 170 });
+        
+        // Add comorbidities if any
+        let currentY = doc.getTextDimensions(complaints, { maxWidth: 170 }).h + 100;
+        if (comorbidities) {
+            doc.setFont('helvetica', 'bold');
+            doc.text('Comorbidities:', 20, currentY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(comorbidities, 20, currentY + 7, { maxWidth: 170 });
+            currentY += doc.getTextDimensions(comorbidities, { maxWidth: 170 }).h + 15;
+        }
+        
+        // Add ongoing medications if any
+        if (ongoingMedications) {
+            doc.setFont('helvetica', 'bold');
+            doc.text('Ongoing Medications:', 20, currentY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(ongoingMedications, 20, currentY + 7, { maxWidth: 170 });
+            currentY += doc.getTextDimensions(ongoingMedications, { maxWidth: 170 }).h + 15;
+        }
         
         // Add medications
         doc.setFont('helvetica', 'bold');
-        doc.text('Medications:', 20, 140);
+        doc.text('Medications:', 20, currentY);
         
         // Create medication table
         const tableColumn = ["Medication", "Dosage", "Frequency", "Duration"];
@@ -203,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.autoTable({
             head: [tableColumn],
             body: tableRows,
-            startY: 145,
+            startY: currentY + 5,
             theme: 'grid',
             styles: {
                 fontSize: 10,
