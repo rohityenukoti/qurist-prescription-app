@@ -219,7 +219,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'bold');
         doc.text('Recommendations:', 20, currentY);
         
-        // Create medication table
+        // Create medication table with automatic page break
         const tableColumn = ["Medication", "Dosage", "Frequency", "Duration"];
         const tableRows = [];
         
@@ -244,30 +244,62 @@ document.addEventListener('DOMContentLoaded', function() {
             },
             headStyles: {
                 fillColor: [66, 139, 202]
+            },
+            // Enable automatic page break
+            willDrawPage: function(data) {
+                // Add header image on new pages
+                const headerImg = document.getElementById('headerImage');
+                if (headerImg.complete && headerImg.naturalHeight !== 0) {
+                    const headerAspectRatio = headerImg.naturalWidth / headerImg.naturalHeight;
+                    const headerWidth = 190;
+                    const headerHeight = headerWidth / headerAspectRatio;
+                    doc.addImage(headerImg, 'PNG', 10, 10, headerWidth, headerHeight);
+                }
             }
         });
         
+        // Calculate remaining space needed
+        let finalY = doc.lastAutoTable.finalY + 10;
+        
         // Add notes if any
         if (notes) {
-            const finalY = doc.lastAutoTable.finalY + 10;
             doc.setFont('helvetica', 'bold');
             doc.text('Additional Notes:', 20, finalY);
             doc.setFont('helvetica', 'normal');
-            doc.text(notes, 20, finalY + 7, { maxWidth: 170 });
+            
+            // Calculate height needed for notes
+            const splitNotes = doc.splitTextToSize(notes, 170);
+            const notesHeight = splitNotes.length * 5; // Approximate height per line
+            
+            // Add new page if notes won't fit
+            if (finalY + notesHeight + 60 > doc.internal.pageSize.height - 40) {
+                doc.addPage();
+                finalY = 20;
+            }
+            
+            doc.text(splitNotes, 20, finalY + 7);
+            finalY += notesHeight + 15;
         }
         
         // Add signature
-        const signatureY = notes ? doc.lastAutoTable.finalY + 40 : doc.lastAutoTable.finalY + 30;
+        const signatureY = finalY + 10;
+        
+        // Add new page if signature won't fit
+        if (signatureY + 40 > doc.internal.pageSize.height - 40) {
+            doc.addPage();
+            finalY = 20;
+        }
+        
         doc.line(140, signatureY, 190, signatureY);
         doc.text("Doctor's Signature", 165, signatureY + 5, { align: 'center' });
         
-        // Add footer image before saving
+        // Add footer image at the bottom of the last page
         const footerImg = document.getElementById('footerImage');
         if (footerImg.complete && footerImg.naturalHeight !== 0) {
             const footerAspectRatio = footerImg.naturalWidth / footerImg.naturalHeight;
-            const footerWidth = 190; // Max width for A4 page with margins
+            const footerWidth = 190;
             const footerHeight = footerWidth / footerAspectRatio;
-            doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10, 
+            doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10,
                 footerWidth, footerHeight);
         }
         
