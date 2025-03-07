@@ -1,3 +1,39 @@
+// Function to update dosage options - move this OUTSIDE the DOMContentLoaded listener
+function updateDosageOptions(medicationSelect) {
+    const dosageSelect = medicationSelect.parentElement.parentElement.querySelector('.medication-dosage');
+    const selectedMed = medicationSelect.value;
+    
+    // Clear existing options
+    dosageSelect.innerHTML = '<option value="">Select Dosage</option>';
+    
+    // Add appropriate dosage options based on medication type
+    if (selectedMed.includes('CBD') || selectedMed.includes('THC')) {
+        const oilDosages = [
+            { value: '0.25 ml', display: '0.25 ml (1/4 ml)' },
+            { value: '0.5 ml', display: '0.5 ml (1/2 ml)' },
+            { value: '0.75 ml', display: '0.75 ml (3/4 ml)' },
+            { value: '1 ml', display: '1 ml' }
+        ];
+        oilDosages.forEach(dosage => {
+            const option = new Option(dosage.display, dosage.value);
+            dosageSelect.add(option);
+        });
+    } else if (selectedMed.includes('Pills')) {
+        const option = new Option('1 capsule', '1 capsule');
+        dosageSelect.add(option);
+    } else if (selectedMed.includes('Gummies')) {
+        const gummyDosages = [
+            { value: '1/4 gummy', display: '1/4 gummy' },
+            { value: '1/2 gummy', display: '1/2 gummy' },
+            { value: '1 gummy', display: '1 gummy' }
+        ];
+        gummyDosages.forEach(dosage => {
+            const option = new Option(dosage.display, dosage.value);
+            dosageSelect.add(option);
+        });
+    }
+}
+
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize medication counter
@@ -13,7 +49,7 @@ document.addEventListener('DOMContentLoaded', function() {
         medicationEntry.innerHTML = `
             <div class="form-group">
                 <label for="medication${medicationCounter}">Medication:</label>
-                <select id="medication${medicationCounter}" class="medication-name" required>
+                <select id="medication${medicationCounter}" class="medication-name" required onchange="updateDosageOptions(this)">
                     <option value="">Select Medication</option>
                     <option value="CBD mild">CBD mild</option>
                     <option value="CBD medium">CBD medium</option>
@@ -28,7 +64,9 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="form-group">
                 <label for="dosage${medicationCounter}">Dosage:</label>
-                <input type="text" id="dosage${medicationCounter}" class="medication-dosage" required>
+                <select id="dosage${medicationCounter}" class="medication-dosage" required>
+                    <option value="">Select Dosage</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="instructions${medicationCounter}">Instructions:</label>
