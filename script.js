@@ -54,29 +54,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to check if the form is valid
     function isFormValid() {
-        const requiredInputs = document.querySelectorAll('#prescriptionForm [required]');
-        for (let input of requiredInputs) {
-            if (!input.value.trim()) {
-                return false;
-            }
-        }
+        // Remove validation check to allow empty prescriptions
         return true;
     }
     
     // Function to generate the prescription PDF
     function generatePrescriptionPDF() {
-        // Get form data with error checking
-        const doctorName = document.getElementById('doctorName')?.value || '';
-        const doctorLicense = document.getElementById('doctorLicense')?.value || '';
-        const clinicName = document.getElementById('clinicName')?.value || '';
+        // Get form data without error checking (remove the '?' optional chaining)
+        const doctorName = document.getElementById('doctorName').value;
+        const doctorLicense = document.getElementById('doctorLicense').value;
+        const clinicName = document.getElementById('clinicName').value;
         
-        const patientName = document.getElementById('patientName')?.value || '';
-        const patientAge = document.getElementById('patientAge')?.value || '';
-        const patientGender = document.getElementById('patientGender')?.value || '';
+        const patientName = document.getElementById('patientName').value;
+        const patientAge = document.getElementById('patientAge').value;
+        const patientGender = document.getElementById('patientGender').value;
         
-        const diagnosis = document.getElementById('diagnosis')?.value || '';
-        const notes = document.getElementById('notes')?.value || '';
-        const date = document.getElementById('date')?.value || '';
+        const diagnosis = document.getElementById('diagnosis').value;
+        const notes = document.getElementById('notes').value;
+        const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
         
         // Get medications
         const medications = [];
@@ -104,18 +99,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const headerImg = document.getElementById('headerImage');
         if (headerImg.complete && headerImg.naturalHeight !== 0) {
             const headerAspectRatio = headerImg.naturalWidth / headerImg.naturalHeight;
-            const headerWidth = 190; // Max width for A4 page with margins
+            const headerWidth = 190;
             const headerHeight = headerWidth / headerAspectRatio;
             doc.addImage(headerImg, 'PNG', 10, 10, headerWidth, headerHeight);
-            
-            // Adjust starting Y position for the rest of the content
             const startY = headerHeight + 20;
         }
         
-        // Add this temporarily while adjusting coordinates
-        doc.setLineWidth(0.1);
-        doc.line(0, 45, 220, 45); // horizontal guide
-        doc.line(100, 0, 100, 297); // vertical guide at x=100
+        // Add Rx symbol
+        const rxImg = document.getElementById('rxImage');
+        if (rxImg.complete && rxImg.naturalHeight !== 0) {
+            const rxWidth = 18; // Small size for Rx symbol
+            const rxHeight = 20;
+            doc.addImage(rxImg, 'PNG', 20, 55, rxWidth, rxHeight);
+        }
         
         // Add patient info in a single line with tighter spacing
         doc.setFontSize(12);
