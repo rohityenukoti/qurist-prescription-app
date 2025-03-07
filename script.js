@@ -102,21 +102,23 @@ document.addEventListener('DOMContentLoaded', function() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        // Set font size and style
-        doc.setFontSize(20);
-        doc.setFont('helvetica', 'bold');
-        
-        // Add clinic header
-        doc.text(clinicName, 105, 20, { align: 'center' });
-        
-        doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
-        doc.text(clinicAddress, 105, 30, { align: 'center', maxWidth: 180 });
-        
-        // Add doctor info
-        doc.setFontSize(12);
-        doc.text(`Dr. ${doctorName}`, 20, 45);
-        doc.text(`License: ${doctorLicense}`, 20, 52);
+        // Add header image
+        const headerImg = document.getElementById('headerImage');
+        if (headerImg.complete && headerImg.naturalHeight !== 0) {
+            const headerAspectRatio = headerImg.naturalWidth / headerImg.naturalHeight;
+            const headerWidth = 190; // Max width for A4 page with margins
+            const headerHeight = headerWidth / headerAspectRatio;
+            doc.addImage(headerImg, 'PNG', 10, 10, headerWidth, headerHeight);
+            
+            // Adjust starting Y position for the rest of the content
+            const startY = headerHeight + 20;
+            
+            // Update all Y positions below by adding startY to them
+            doc.text(clinicName, 105, startY + 20, { align: 'center' });
+            doc.text(clinicAddress, 105, startY + 30, { align: 'center', maxWidth: 180 });
+            doc.text(`Dr. ${doctorName}`, 20, startY + 45);
+            doc.text(`License: ${doctorLicense}`, 20, startY + 52);
+        }
         
         // Add prescription title
         doc.setFontSize(16);
@@ -190,6 +192,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const signatureY = notes ? doc.lastAutoTable.finalY + 40 : doc.lastAutoTable.finalY + 30;
         doc.line(140, signatureY, 190, signatureY);
         doc.text("Doctor's Signature", 165, signatureY + 5, { align: 'center' });
+        
+        // Add footer image before saving
+        const footerImg = document.getElementById('footerImage');
+        if (footerImg.complete && footerImg.naturalHeight !== 0) {
+            const footerAspectRatio = footerImg.naturalWidth / footerImg.naturalHeight;
+            const footerWidth = 190; // Max width for A4 page with margins
+            const footerHeight = footerWidth / footerAspectRatio;
+            doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10, 
+                footerWidth, footerHeight);
+        }
         
         // Save the PDF
         doc.save(`Prescription_${patientName}_${formatDate(date)}.pdf`);
