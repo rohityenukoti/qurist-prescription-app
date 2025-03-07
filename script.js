@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <option value="CBD + THC mild">CBD + THC mild</option>
                     <option value="CBD + THC medium">CBD + THC medium</option>
                     <option value="CBD + THC strong">CBD + THC strong</option>
+                    <option value="Painaway Pills">Painaway Pills</option>
+                    <option value="Periodaid Pills">Periodaid Pills</option>
+                    <option value="Sleepeasy Gummies">Sleepeasy Gummies</option>
                 </select>
             </div>
             <div class="form-group">
@@ -75,7 +78,10 @@ document.addEventListener('DOMContentLoaded', function() {
             'CBD strong': 'Qurist Wide Spectrum High Potency Oil',
             'CBD + THC mild': 'Qurist Full Spectrum Mild Potency Oil',
             'CBD + THC medium': 'Qurist Full Spectrum Medium Potency Oil',
-            'CBD + THC strong': 'Qurist Full Spectrum High Potency Oil'
+            'CBD + THC strong': 'Qurist Full Spectrum High Potency Oil',
+            'Painaway Pills': 'Qurist Painaway Pills',
+            'Periodaid Pills': 'Qurist Periodaid Pills',
+            'Sleepeasy Gummies': 'Qurist Sleepeasy Gummies'
         };
 
         // Get form data
