@@ -32,6 +32,42 @@ function updateDosageOptions(medicationSelect) {
             dosageSelect.add(option);
         });
     }
+    
+    updateInstructionOptions(medicationSelect);
+}
+
+// Function to update instruction options - move this OUTSIDE the DOMContentLoaded listener
+function updateInstructionOptions(medicationSelect) {
+    const instructionsSelect = medicationSelect.parentElement.parentElement.querySelector('.medication-instructions');
+    const selectedMed = medicationSelect.value;
+    
+    // Clear existing options
+    instructionsSelect.innerHTML = '<option value="">Select Instructions</option>';
+    
+    // Add appropriate instruction options based on medication type
+    if (selectedMed.includes('CBD') || selectedMed.includes('THC')) {
+        const oilInstructions = [
+            'Under the Tongue -- 30 minutes before bedtime -- After Dinner',
+            'Under the Tongue -- After Breakfast',
+            'Under the Tongue -- After Lunch',
+            'Under the Tongue -- As and When Required (SOS)'
+        ];
+        oilInstructions.forEach(instruction => {
+            const option = new Option(instruction, instruction);
+            instructionsSelect.add(option);
+        });
+    } else {
+        const otherInstructions = [
+            '30 minutes before bedtime -- After Dinner',
+            'After Breakfast',
+            'After Lunch',
+            'As and When Required (SOS)'
+        ];
+        otherInstructions.forEach(instruction => {
+            const option = new Option(instruction, instruction);
+            instructionsSelect.add(option);
+        });
+    }
 }
 
 // Wait for the DOM to be fully loaded
@@ -70,7 +106,9 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <div class="form-group">
                 <label for="instructions${medicationCounter}">Instructions:</label>
-                <input type="text" id="instructions${medicationCounter}" class="medication-instructions" required>
+                <select id="instructions${medicationCounter}" class="medication-instructions" required>
+                    <option value="">Select Instructions</option>
+                </select>
             </div>
             <button type="button" class="remove-medication-btn">Remove</button>
         `;
