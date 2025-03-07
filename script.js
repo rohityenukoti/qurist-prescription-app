@@ -447,6 +447,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         const signatureY = finalY + 10;
+        
+        // Add signature image based on selected doctor
+        const signatureImg = document.getElementById(
+            doctorSelect === 'dr_rachna' ? 'rachnaSignature' : 'rohitSignature'
+        );
+        
+        if (signatureImg.complete && signatureImg.naturalHeight !== 0) {
+            const signWidth = 15; // Adjust signature width as needed
+            const signHeight = (signWidth * signatureImg.naturalHeight) / signatureImg.naturalWidth;
+            doc.addImage(signatureImg, 'PNG', 150, signatureY - signHeight, signWidth, signHeight);
+        }
+        
         doc.line(140, signatureY, 190, signatureY);
         doc.text("Doctor's Signature", 165, signatureY + 5, { align: 'center' });
         
