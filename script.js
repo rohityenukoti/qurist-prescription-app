@@ -115,10 +115,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add default notes
     const defaultNotes = [
         "• Do not combine with alcohol, sleeping pills, or painkillers.",
-        "• Maximum 2 doses within 24 hours.",
+        "• Maximum 2 doses within 24 hours.", 
         "• Store securely away from children.",
         "• Not recommended during pregnancy or breastfeeding.",
-        "• Follow-up consultation after 1 month."
+        "• Follow-up consultation after 1 month.",
+        "• Call +91 9485848844 if you experience any adverse events."
     ].join('\n');
     
     document.getElementById('notes').value = defaultNotes;
