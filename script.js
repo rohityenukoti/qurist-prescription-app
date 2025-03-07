@@ -347,26 +347,23 @@ document.addEventListener('DOMContentLoaded', function() {
             currentY = doc.lastAutoTable.finalY + 10;
         }
         
-        // Add medications
+        // Add medications with complete table handling
         doc.setFont('helvetica', 'bold');
+        const recommendationsY = currentY;
+        
+        // Check if there's enough space for the entire medications table
+        const estimatedTableHeight = (medications.length + 1) * 15; // Rough estimate: header + rows
+        if (recommendationsY + estimatedTableHeight > doc.internal.pageSize.height - 40) {
+            doc.addPage();
+            currentY = 20;
+        }
+        
         doc.text('Recommendations:', 20, currentY);
         
         // Create medication table with automatic page break
-        const tableColumn = ["Medication", "Dosage", "Instructions"];
-        const tableRows = [];
-        
-        medications.forEach(med => {
-            const medData = [
-                med.name,
-                med.dosage,
-                med.instructions
-            ];
-            tableRows.push(medData);
-        });
-        
         doc.autoTable({
-            head: [tableColumn],
-            body: tableRows,
+            head: [["Medication", "Dosage", "Instructions"]],
+            body: medications.map(med => [med.name, med.dosage, med.instructions]),
             startY: currentY + 5,
             theme: 'grid',
             styles: {
@@ -376,7 +373,7 @@ document.addEventListener('DOMContentLoaded', function() {
             headStyles: {
                 fillColor: [66, 139, 202]
             },
-            // Enable automatic page break
+            pageBreak: 'avoid', // Tries to keep the table together
             willDrawPage: function(data) {
                 // Add header image on new pages
                 const headerImg = document.getElementById('headerImage');
@@ -389,38 +386,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
         
-        // Calculate remaining space needed
         let finalY = doc.lastAutoTable.finalY + 10;
         
         // Add notes if any
         if (notes) {
-            doc.setFont('helvetica', 'bold');
-            doc.text('Additional Notes:', 20, finalY);
-            doc.setFont('helvetica', 'normal');
-            
             // Calculate height needed for notes
             const splitNotes = doc.splitTextToSize(notes, 170);
-            const notesHeight = splitNotes.length * 5; // Approximate height per line
+            const notesHeight = splitNotes.length * 5 + 15; // Height for notes + header + padding
             
-            // Add new page if notes won't fit
-            if (finalY + notesHeight + 60 > doc.internal.pageSize.height - 40) {
+            // Check if there's enough space for the entire notes section
+            if (finalY + notesHeight > doc.internal.pageSize.height - 40) {
                 doc.addPage();
                 finalY = 20;
             }
             
+            doc.setFont('helvetica', 'bold');
+            doc.text('Additional Notes:', 20, finalY);
+            doc.setFont('helvetica', 'normal');
             doc.text(splitNotes, 20, finalY + 7);
-            finalY += notesHeight + 15;
+            finalY += notesHeight;
         }
         
-        // Add signature
-        const signatureY = finalY + 10;
-        
-        // Add new page if signature won't fit
-        if (signatureY + 40 > doc.internal.pageSize.height - 40) {
+        // Add signature with page break check
+        const signatureHeight = 40; // Height needed for signature
+        if (finalY + signatureHeight > doc.internal.pageSize.height - 40) {
             doc.addPage();
             finalY = 20;
         }
         
+        const signatureY = finalY + 10;
         doc.line(140, signatureY, 190, signatureY);
         doc.text("Doctor's Signature", 165, signatureY + 5, { align: 'center' });
         
