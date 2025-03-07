@@ -108,6 +108,10 @@ function addPageContinuationText(doc, pageNum, totalPages) {
 
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Set default date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').value = today;
+    
     // Add default notes
     const defaultNotes = [
         "• Do not combine with alcohol, sleeping pills, or painkillers.",
