@@ -65,18 +65,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to generate the prescription PDF
     function generatePrescriptionPDF() {
-        // Get form data
-        const doctorName = document.getElementById('doctorName').value;
-        const doctorLicense = document.getElementById('doctorLicense').value;
-        const clinicName = document.getElementById('clinicName').value;
+        // Get form data with error checking
+        const doctorName = document.getElementById('doctorName')?.value || '';
+        const doctorLicense = document.getElementById('doctorLicense')?.value || '';
+        const clinicName = document.getElementById('clinicName')?.value || '';
         
-        const patientName = document.getElementById('patientName').value;
-        const patientAge = document.getElementById('patientAge').value;
-        const patientGender = document.getElementById('patientGender').value;
+        const patientName = document.getElementById('patientName')?.value || '';
+        const patientAge = document.getElementById('patientAge')?.value || '';
+        const patientGender = document.getElementById('patientGender')?.value || '';
         
-        const diagnosis = document.getElementById('diagnosis').value;
-        const notes = document.getElementById('notes').value;
-        const date = document.getElementById('date').value;
+        const diagnosis = document.getElementById('diagnosis')?.value || '';
+        const notes = document.getElementById('notes')?.value || '';
+        const date = document.getElementById('date')?.value || '';
         
         // Get medications
         const medications = [];
