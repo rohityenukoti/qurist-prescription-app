@@ -485,8 +485,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 doc.addImage(signatureImg, 'PNG', 150, finalY - 5, signWidth, signHeight);
             }
             
-            // Add seal next to signature
-            drawDoctorSeal(doc, 120, finalY, selectedDoctor);
+            // Add seal to the right of signature
+            drawDoctorSeal(doc, 185, finalY, selectedDoctor);
             
             doc.line(140, finalY + 10, 190, finalY + 10);
             doc.text("Doctor's Signature", 165, finalY + 15, { align: 'center' });
