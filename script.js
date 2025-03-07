@@ -115,30 +115,46 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add patient info in a single line with tighter spacing
         doc.setFontSize(12);
-        doc.setFont('helvetica', 'normal');
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
         
         // First group: Name
         doc.text(`Name:`, 20, 45);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
         doc.text(`${patientName}`, 37, 45);
         
         // Second group: Age
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
         doc.text(`Age:`, 105, 45);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
         doc.text(`${patientAge}`, 117, 45);
         
         // Third group: Sex
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
         doc.text(`Sex:`, 130, 45);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
         doc.text(`${patientGender}`, 142, 45);
         
         // Fourth group: Date
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
         doc.text(`Date:`, 165, 45);
-        doc.text(`${formatDate(date)}`, 177, 45);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0, 0, 0);
+        doc.text(`${formatDate(date)}`, 178, 45);
         
         // Draw underlines with adjusted widths
         doc.setLineWidth(0.5);
+        doc.setDrawColor(2, 113, 128); // Set Blue Lagoon color for underlines
         doc.line(35, 46, 100, 46);   // Name underline
         doc.line(115, 46, 125, 46);  // Age underline
         doc.line(140, 46, 160, 46);  // Gender underline
-        doc.line(175, 46, 205, 46);  // Date underline
+        doc.line(176, 46, 205, 46);  // Date underline
         
         // Add diagnosis
         doc.setFont('helvetica', 'bold');
