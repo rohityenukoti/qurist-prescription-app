@@ -77,6 +77,35 @@ function autoResizeTextArea(element) {
     element.style.height = element.scrollHeight + 'px';
 }
 
+// Add this function at the top level
+function addPageContinuationText(doc, pageNum, totalPages) {
+    if (pageNum < totalPages) {
+        doc.setFont('helvetica', 'italic');
+        doc.setFontSize(10);
+        doc.setTextColor(128, 128, 128); // Gray color
+        
+        // Add a subtle line
+        doc.setDrawColor(200, 200, 200); // Light gray
+        doc.line(20, doc.internal.pageSize.height - 25, 190, doc.internal.pageSize.height - 25);
+        
+        // Add continuation text
+        doc.text(
+            'Continued on next page...',
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 20,
+            { align: 'center' }
+        );
+        
+        // Add page numbers
+        doc.text(
+            `Page ${pageNum} of ${totalPages}`,
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 15,
+            { align: 'center' }
+        );
+    }
+}
+
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Add default notes
@@ -383,6 +412,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     const headerHeight = headerWidth / headerAspectRatio;
                     doc.addImage(headerImg, 'PNG', 10, 10, headerWidth, headerHeight);
                 }
+                
+                // Add continuation text for all pages except the last one
+                addPageContinuationText(doc, doc.internal.getNumberOfPages(), doc.internal.getNumberOfPages() + 1);
             }
         });
         
@@ -401,7 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             doc.setFont('helvetica', 'bold');
-            doc.text('Additional Notes:', 20, finalY);
+            doc.text('Additional Instructions:', 20, finalY);
             doc.setFont('helvetica', 'normal');
             doc.text(splitNotes, 20, finalY + 7);
             finalY += notesHeight;
@@ -428,6 +460,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 footerWidth, footerHeight);
         }
         
+        // Before saving the PDF, add the final page count
+        doc.setProperties({
+            title: `Prescription for ${patientName}`,
+            subject: 'Medical Prescription',
+            creator: 'Qurist Digital Prescription System'
+        });
+
+        // Update the last page's continuation text with the final page count
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= totalPages; i++) {
+            doc.setPage(i);
+            addPageContinuationText(doc, i, totalPages);
+        }
+
         // Save the PDF
         doc.save(`${patientName}_${formatDate(date)}.pdf`);
     }
