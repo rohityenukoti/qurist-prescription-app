@@ -304,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Save the PDF
-        doc.save(`Prescription_${patientName}_${formatDate(date)}.pdf`);
+        doc.save(`${patientName}_${formatDate(date)}.pdf`);
     }
     
     // Helper function to format date
