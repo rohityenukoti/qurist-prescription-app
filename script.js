@@ -112,24 +112,37 @@ document.addEventListener('DOMContentLoaded', function() {
             const startY = headerHeight + 20;
         }
         
-        // Add patient info in a single line
+        // Add this temporarily while adjusting coordinates
+        doc.setLineWidth(0.1);
+        doc.line(0, 45, 220, 45); // horizontal guide
+        doc.line(100, 0, 100, 297); // vertical guide at x=100
+        
+        // Add patient info in a single line with tighter spacing
         doc.setFontSize(12);
         doc.setFont('helvetica', 'normal');
-        doc.text(`Name`, 20, 45);
-        doc.text(`${patientName}`, 60, 45);
-        doc.text(`Age`, 120, 45);
-        doc.text(`${patientAge}`, 140, 45);
-        doc.text(`Sex`, 160, 45);
-        doc.text(`${patientGender}`, 180, 45);
-        doc.text(`Date`, 200, 45);
-        doc.text(`${formatDate(date)}`, 230, 45);
         
-        // Draw underlines
+        // First group: Name
+        doc.text(`Name`, 20, 45);
+        doc.text(`${patientName}`, 40, 45);
+        
+        // Second group: Age
+        doc.text(`Age`, 100, 45);
+        doc.text(`${patientAge}`, 115, 45);
+        
+        // Third group: Sex
+        doc.text(`Sex`, 125, 45);
+        doc.text(`${patientGender}`, 135, 45);
+        
+        // Fourth group: Date
+        doc.text(`Date`, 180, 45);
+        doc.text(`${formatDate(date)}`, 190, 45);
+        
+        // Draw underlines with adjusted widths
         doc.setLineWidth(0.5);
-        doc.line(60, 46, 110, 46);  // Name underline
-        doc.line(140, 46, 155, 46); // Age underline
-        doc.line(180, 46, 195, 46); // Gender underline
-        doc.line(230, 46, 270, 46); // Date underline
+        doc.line(35, 46, 95, 46);   // Name underline
+        doc.line(110, 46, 120, 46);  // Age underline
+        doc.line(130, 46, 160, 46);  // Gender underline
+        doc.line(190, 46, 240, 46);  // Date underline
 
         // Add prescription title
         doc.setFontSize(16);
