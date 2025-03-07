@@ -402,7 +402,13 @@ document.addEventListener('DOMContentLoaded', function() {
             headStyles: {
                 fillColor: [66, 139, 202]
             },
-            pageBreak: 'avoid', // Tries to keep the table together
+            pageBreak: 'avoid',
+            margin: { left: 20, right: 20 },
+            columnStyles: {
+                0: { cellWidth: 70 },
+                1: { cellWidth: 30 },
+                2: { cellWidth: 70 }
+            },
             willDrawPage: function(data) {
                 // Add header image on new pages
                 const headerImg = document.getElementById('headerImage');
