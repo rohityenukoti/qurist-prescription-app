@@ -194,21 +194,42 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listener to the "Generate Prescription" button
     document.getElementById('generatePdfBtn').addEventListener('click', function() {
-        // Check if the form is valid
-        const form = document.getElementById('prescriptionForm');
-        if (!isFormValid()) {
-            alert('Please fill in all required fields.');
-            return;
+        if (isFormValid()) {
+            generatePrescriptionPDF();
         }
-        
-        // Generate the PDF
-        generatePrescriptionPDF();
     });
     
     // Function to check if the form is valid
     function isFormValid() {
-        // Remove validation check to allow empty prescriptions
-        return true;
+        const requiredFields = {
+            'doctorSelect': 'Please select a doctor',
+            'patientName': 'Please enter patient name',
+            'patientAge': 'Please enter patient age',
+            'patientGender': 'Please select patient gender',
+            'complaints': 'Please enter patient complaints'
+        };
+
+        let isValid = true;
+        let errorMessages = [];
+
+        // Check each required field
+        for (const [fieldId, message] of Object.entries(requiredFields)) {
+            const field = document.getElementById(fieldId);
+            if (!field.value.trim()) {
+                isValid = false;
+                errorMessages.push(message);
+                field.classList.add('invalid-field'); // Add a visual indicator
+            } else {
+                field.classList.remove('invalid-field');
+            }
+        }
+
+        // If there are errors, show them to the user
+        if (!isValid) {
+            alert('Please fill in the following required fields:\n\n' + errorMessages.join('\n'));
+        }
+
+        return isValid;
     }
     
     // Function to generate the prescription PDF
