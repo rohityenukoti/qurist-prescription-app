@@ -31,12 +31,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <input type="text" id="dosage${medicationCounter}" class="medication-dosage" required>
             </div>
             <div class="form-group">
-                <label for="frequency${medicationCounter}">Frequency:</label>
-                <input type="text" id="frequency${medicationCounter}" class="medication-frequency" required>
-            </div>
-            <div class="form-group">
-                <label for="duration${medicationCounter}">Duration:</label>
-                <input type="text" id="duration${medicationCounter}" class="medication-duration" required>
+                <label for="instructions${medicationCounter}">Instructions:</label>
+                <input type="text" id="instructions${medicationCounter}" class="medication-instructions" required>
             </div>
             <button type="button" class="remove-medication-btn">Remove</button>
         `;
@@ -120,14 +116,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedName = entry.querySelector('.medication-name').value;
             const displayName = medicationDisplayNames[selectedName] || selectedName;
             const dosage = entry.querySelector('.medication-dosage').value;
-            const frequency = entry.querySelector('.medication-frequency').value;
-            const duration = entry.querySelector('.medication-duration').value;
+            const instructions = entry.querySelector('.medication-instructions').value;
             
             medications.push({
-                name: displayName, // Use the display name instead of the selected value
+                name: displayName,
                 dosage,
-                frequency,
-                duration
+                instructions
             });
         });
         
@@ -245,15 +239,14 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Recommendations:', 20, currentY);
         
         // Create medication table with automatic page break
-        const tableColumn = ["Medication", "Dosage", "Frequency", "Duration"];
+        const tableColumn = ["Medication", "Dosage", "Instructions"];
         const tableRows = [];
         
         medications.forEach(med => {
             const medData = [
                 med.name,
                 med.dosage,
-                med.frequency,
-                med.duration
+                med.instructions
             ];
             tableRows.push(medData);
         });
