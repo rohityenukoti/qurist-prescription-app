@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // First group: Name
         doc.text(`Name:`, 20, 45);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(0); // Set to black
         doc.text(`${patientName}`, 37, 45);
         
         // Second group: Age
@@ -333,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setTextColor(2, 113, 128);
         doc.text(`Age:`, 105, 45);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(0); // Set to black
         doc.text(`${patientAge}`, 117, 45);
         
         // Third group: Sex
@@ -341,7 +341,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setTextColor(2, 113, 128);
         doc.text(`Sex:`, 130, 45);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(0); // Set to black
         doc.text(`${patientGender}`, 142, 45);
         
         // Fourth group: Date
@@ -349,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setTextColor(2, 113, 128);
         doc.text(`Date:`, 165, 45);
         doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0, 0, 0);
+        doc.setTextColor(0); // Set to black
         doc.text(`${formatDate(date)}`, 178, 45);
         
         // Draw underlines with adjusted widths
@@ -369,8 +369,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add complaints
         doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
         doc.text('Complaints:', 20, 85);
         doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0); // Set to black
         doc.text(complaints, 20, 92, { maxWidth: 170 });
         
         // Create table for comorbidities and ongoing medications
@@ -383,6 +385,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 head: [coMedColumns],
                 body: coMedRows,
                 startY: currentY,
+                margin: { left: 17, right: 20 }, // Add margin to match Recommendations table
                 theme: 'plain',
                 styles: {
                     fontSize: 10,
@@ -415,6 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currentY = 20;
         }
         
+        doc.setTextColor(2, 113, 128);
         doc.text('Recommendations:', 20, currentY);
         
         // Create medication table with automatic page break
@@ -425,10 +429,12 @@ document.addEventListener('DOMContentLoaded', function() {
             theme: 'grid',
             styles: {
                 fontSize: 10,
-                cellPadding: 3
+                cellPadding: 3,
+                textColor: [0, 0, 0] // Set table content to black
             },
             headStyles: {
-                fillColor: [66, 139, 202]
+                fillColor: [66, 139, 202],
+                textColor: [255, 255, 255] // Keep header text white
             },
             pageBreak: 'avoid',
             margin: { left: 20, right: 20 },
@@ -470,8 +476,10 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Add notes on the left side
             doc.setFont('helvetica', 'bold');
+            doc.setTextColor(2, 113, 128);
             doc.text('Additional Instructions:', 20, finalY);
             doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0); // Set notes text to black
             doc.text(splitNotes, 20, finalY + 7);
             
             // Add signature on the right side at the same level
