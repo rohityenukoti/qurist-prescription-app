@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add medications
         doc.setFont('helvetica', 'bold');
-        doc.text('Medications:', 20, currentY);
+        doc.text('Recommendations:', 20, currentY);
         
         // Create medication table
         const tableColumn = ["Medication", "Dosage", "Frequency", "Duration"];
