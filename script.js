@@ -13,7 +13,15 @@ document.addEventListener('DOMContentLoaded', function() {
         medicationEntry.innerHTML = `
             <div class="form-group">
                 <label for="medication${medicationCounter}">Medication:</label>
-                <input type="text" id="medication${medicationCounter}" class="medication-name" required>
+                <select id="medication${medicationCounter}" class="medication-name" required>
+                    <option value="">Select Medication</option>
+                    <option value="CBD mild">CBD mild</option>
+                    <option value="CBD medium">CBD medium</option>
+                    <option value="CBD strong">CBD strong</option>
+                    <option value="CBD + THC mild">CBD + THC mild</option>
+                    <option value="CBD + THC medium">CBD + THC medium</option>
+                    <option value="CBD + THC strong">CBD + THC strong</option>
+                </select>
             </div>
             <div class="form-group">
                 <label for="dosage${medicationCounter}">Dosage:</label>
@@ -60,6 +68,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to generate the prescription PDF
     function generatePrescriptionPDF() {
+        // Add medication name mapping
+        const medicationDisplayNames = {
+            'CBD mild': 'Qurist Wide Spectrum Mild Potency Oil',
+            'CBD medium': 'Qurist Wide Spectrum Medium Potency Oil',
+            'CBD strong': 'Qurist Wide Spectrum High Potency Oil',
+            'CBD + THC mild': 'Qurist Full Spectrum Mild Potency Oil',
+            'CBD + THC medium': 'Qurist Full Spectrum Medium Potency Oil',
+            'CBD + THC strong': 'Qurist Full Spectrum High Potency Oil'
+        };
+
         // Get form data
         const doctorSelect = document.getElementById('doctorSelect').value;
         
@@ -88,18 +106,19 @@ document.addEventListener('DOMContentLoaded', function() {
         const notes = document.getElementById('notes').value;
         const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
         
-        // Get medications
+        // Get medications (updated to use display names)
         const medications = [];
         const medicationEntries = document.querySelectorAll('.medication-entry');
         
         medicationEntries.forEach(entry => {
-            const name = entry.querySelector('.medication-name').value;
+            const selectedName = entry.querySelector('.medication-name').value;
+            const displayName = medicationDisplayNames[selectedName] || selectedName;
             const dosage = entry.querySelector('.medication-dosage').value;
             const frequency = entry.querySelector('.medication-frequency').value;
             const duration = entry.querySelector('.medication-duration').value;
             
             medications.push({
-                name,
+                name: displayName, // Use the display name instead of the selected value
                 dosage,
                 frequency,
                 duration
