@@ -71,6 +71,12 @@ function updateInstructionOptions(medicationSelect) {
     });
 }
 
+// Add this function outside the DOMContentLoaded listener
+function autoResizeTextArea(element) {
+    element.style.height = 'auto';
+    element.style.height = element.scrollHeight + 'px';
+}
+
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Add default notes
@@ -140,7 +146,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     .map(cb => cb.value)
                     .join('\n');
                 textArea.value = selectedInstructions;
+                autoResizeTextArea(textArea);
             }
+        });
+
+        // After creating new medication entry, add listeners to its textareas
+        const newTextareas = medicationEntry.querySelectorAll('textarea');
+        newTextareas.forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                autoResizeTextArea(this);
+            });
         });
     });
     
@@ -432,7 +447,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return `${day}/${month}/${year}`;
     }
 
-    // Add event listener for the initial medication entry's checkboxes
+    // Update the initial medication entry's checkbox listener
     document.querySelector('.instructions-checklist').addEventListener('change', function(e) {
         if (e.target.type === 'checkbox') {
             const textArea = this.parentElement.querySelector('.instructions-text');
@@ -440,6 +455,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 .map(cb => cb.value)
                 .join('\n');
             textArea.value = selectedInstructions;
+            autoResizeTextArea(textArea);
         }
+    });
+
+    // Auto-resize all textareas on input
+    document.querySelectorAll('textarea').forEach(textarea => {
+        textarea.addEventListener('input', function() {
+            autoResizeTextArea(this);
+        });
+        // Initial resize
+        autoResizeTextArea(textarea);
     });
 }); 
