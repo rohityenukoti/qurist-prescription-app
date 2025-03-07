@@ -114,4 +114,42 @@ button[type="reset"] {
 
 button[type="reset"]:hover {
     background-color: #c0392b;
+}
+
+/* Add these new styles */
+.instructions-container {
+    margin-bottom: 15px;
+}
+
+.instructions-checklist {
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    margin-bottom: 10px;
+    background-color: white;
+}
+
+.checkbox-item {
+    margin-bottom: 8px;
+}
+
+.checkbox-item input[type="checkbox"] {
+    width: auto;
+    margin-right: 8px;
+}
+
+.checkbox-item label {
+    display: inline;
+    font-weight: normal;
+}
+
+.instructions-text {
+    width: 100%;
+    min-height: 60px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-top: 10px;
 } 

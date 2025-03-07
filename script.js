@@ -38,36 +38,37 @@ function updateDosageOptions(medicationSelect) {
 
 // Function to update instruction options - move this OUTSIDE the DOMContentLoaded listener
 function updateInstructionOptions(medicationSelect) {
-    const instructionsSelect = medicationSelect.parentElement.parentElement.querySelector('.medication-instructions');
+    const instructionsContainer = medicationSelect.parentElement.parentElement.querySelector('.instructions-container');
     const selectedMed = medicationSelect.value;
     
     // Clear existing options
-    instructionsSelect.innerHTML = '<option value="">Select Instructions</option>';
+    instructionsContainer.querySelector('.instructions-checklist').innerHTML = '';
     
     // Add appropriate instruction options based on medication type
-    if (selectedMed.includes('CBD') || selectedMed.includes('THC')) {
-        const oilInstructions = [
+    const instructions = selectedMed.includes('CBD') || selectedMed.includes('THC') 
+        ? [
             'Under the Tongue -- 30 minutes before bedtime -- After Dinner',
             'Under the Tongue -- After Breakfast',
             'Under the Tongue -- After Lunch',
             'Under the Tongue -- As and When Required (SOS)'
-        ];
-        oilInstructions.forEach(instruction => {
-            const option = new Option(instruction, instruction);
-            instructionsSelect.add(option);
-        });
-    } else {
-        const otherInstructions = [
+        ]
+        : [
             '30 minutes before bedtime -- After Dinner',
             'After Breakfast',
             'After Lunch',
             'As and When Required (SOS)'
         ];
-        otherInstructions.forEach(instruction => {
-            const option = new Option(instruction, instruction);
-            instructionsSelect.add(option);
-        });
-    }
+
+    const checklistDiv = instructionsContainer.querySelector('.instructions-checklist');
+    instructions.forEach(instruction => {
+        const checkbox = document.createElement('div');
+        checkbox.className = 'checkbox-item';
+        checkbox.innerHTML = `
+            <input type="checkbox" value="${instruction}">
+            <label>${instruction}</label>
+        `;
+        checklistDiv.appendChild(checkbox);
+    });
 }
 
 // Wait for the DOM to be fully loaded
@@ -104,11 +105,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     <option value="">Select Dosage</option>
                 </select>
             </div>
-            <div class="form-group">
-                <label for="instructions${medicationCounter}">Instructions:</label>
-                <select id="instructions${medicationCounter}" class="medication-instructions" required>
-                    <option value="">Select Instructions</option>
-                </select>
+            <div class="form-group instructions-container">
+                <label>Instructions:</label>
+                <div class="instructions-checklist"></div>
+                <textarea class="instructions-text" placeholder="Selected instructions will appear here. You can edit them as needed."></textarea>
             </div>
             <button type="button" class="remove-medication-btn">Remove</button>
         `;
@@ -119,6 +119,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add event listener to the remove button
         medicationEntry.querySelector('.remove-medication-btn').addEventListener('click', function() {
             medicationEntry.remove();
+        });
+
+        // Add event listener for checkboxes
+        medicationEntry.querySelector('.instructions-checklist').addEventListener('change', function(e) {
+            if (e.target.type === 'checkbox') {
+                const textArea = this.parentElement.querySelector('.instructions-text');
+                const selectedInstructions = Array.from(this.querySelectorAll('input:checked'))
+                    .map(cb => cb.value)
+                    .join('\n');
+                textArea.value = selectedInstructions;
+            }
         });
     });
     
@@ -192,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedName = entry.querySelector('.medication-name').value;
             const displayName = medicationDisplayNames[selectedName] || selectedName;
             const dosage = entry.querySelector('.medication-dosage').value;
-            const instructions = entry.querySelector('.medication-instructions').value;
+            const instructions = entry.querySelector('.instructions-text').value;
             
             medications.push({
                 name: displayName,
@@ -409,4 +420,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const year = date.getFullYear();
         return `${day}/${month}/${year}`;
     }
+
+    // Add event listener for the initial medication entry's checkboxes
+    document.querySelector('.instructions-checklist').addEventListener('change', function(e) {
+        if (e.target.type === 'checkbox') {
+            const textArea = this.parentElement.querySelector('.instructions-text');
+            const selectedInstructions = Array.from(this.querySelectorAll('input:checked'))
+                .map(cb => cb.value)
+                .join('\n');
+            textArea.value = selectedInstructions;
+        }
+    });
 }); 
