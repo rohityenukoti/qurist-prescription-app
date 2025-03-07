@@ -73,6 +73,17 @@ function updateInstructionOptions(medicationSelect) {
 
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Add default notes
+    const defaultNotes = [
+        "• Do not combine with alcohol, sleeping pills, or painkillers.",
+        "• Maximum 2 doses within 24 hours.",
+        "• Store securely away from children.",
+        "• Not recommended during pregnancy or breastfeeding.",
+        "• Follow-up consultation after 1 month."
+    ].join('\n');
+    
+    document.getElementById('notes').value = defaultNotes;
+    
     // Initialize medication counter
     let medicationCounter = 1;
     
