@@ -574,18 +574,19 @@ function drawDoctorSeal(doc, x, y, doctorInfo) {
     doc.setFontSize(5);
     doc.setTextColor(0, 51, 102);
     
-    // Doctor name at the top of the circle
-    doc.text(doctorInfo.name, x, y - 3, { align: 'center' });
+    // Center all text vertically within the circle
+    // Doctor name
+    doc.text(doctorInfo.name, x, y + 1, { align: 'center' });
     
     // Certified Medical Practitioner
     doc.setFontSize(4);
-    doc.text('Certified Medical Practitioner', x, y, { align: 'center' });
+    doc.text('Certified Medical Practitioner', x, y + 5, { align: 'center' });
     
     // Registration number
-    doc.text(`Reg No: ${doctorInfo.regNo}`, x, y + 3, { align: 'center' });
+    doc.text(`Reg No: ${doctorInfo.regNo}`, x, y + 8, { align: 'center' });
     
     // Company name at the bottom
-    doc.text('Hemp Health Pvt Ltd', x, y + 7, { align: 'center' });
+    doc.text('Hemp Health Pvt Ltd', x, y + 11, { align: 'center' });
     
     // Restore previous state
     doc.restoreGraphicsState();
