@@ -576,7 +576,7 @@ function drawDoctorSeal(doc, x, y, doctorInfo) {
     
     // Add text inside the seal
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(6);
+    doc.setFontSize(7);
     doc.setTextColor(0, 51, 102);
     
     // Center all text vertically within the circle
