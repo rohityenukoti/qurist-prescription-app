@@ -587,40 +587,6 @@ function drawDoctorSeal(doc, x, y, doctorInfo) {
     // Company name at the bottom
     doc.text('Hemp Health Pvt Ltd', x, y + 7, { align: 'center' });
     
-    // Add a star or emblem in the center
-    doc.setDrawColor(0, 51, 102);
-    drawStar(doc, x, y + 12, 3, 6, 3);
-    
     // Restore previous state
     doc.restoreGraphicsState();
-}
-
-// Helper function to draw a star shape for the seal
-function drawStar(doc, cx, cy, outerRadius, innerRadius, points) {
-    let angle = Math.PI / points;
-    
-    // Start at the top point
-    doc.setLineWidth(0.2);
-    doc.setFillColor(255, 255, 255, 0); // Transparent fill
-    
-    // Begin a new path
-    let path = [];
-    
-    for (let i = 0; i < points * 2; i++) {
-        let radius = i % 2 === 0 ? outerRadius : innerRadius;
-        let x = cx + radius * Math.sin(i * angle);
-        let y = cy - radius * Math.cos(i * angle);
-        
-        if (i === 0) {
-            path.push([x, y, 'm']);
-        } else {
-            path.push([x, y, 'l']);
-        }
-    }
-    
-    // Close the path
-    path.push(['h']);
-    
-    // Draw the path
-    doc.lines(path, 0, 0);
 } 
