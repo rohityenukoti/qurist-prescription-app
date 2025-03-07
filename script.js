@@ -69,12 +69,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const doctorName = document.getElementById('doctorName').value;
         const doctorLicense = document.getElementById('doctorLicense').value;
         const clinicName = document.getElementById('clinicName').value;
-        const clinicAddress = document.getElementById('clinicAddress').value;
         
         const patientName = document.getElementById('patientName').value;
         const patientAge = document.getElementById('patientAge').value;
         const patientGender = document.getElementById('patientGender').value;
-        const patientAddress = document.getElementById('patientAddress').value;
         
         const diagnosis = document.getElementById('diagnosis').value;
         const notes = document.getElementById('notes').value;
@@ -152,7 +150,6 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text(`Name: ${patientName}`, 20, 90);
         doc.text(`Age: ${patientAge}`, 20, 97);
         doc.text(`Gender: ${patientGender}`, 20, 104);
-        doc.text(`Address: ${patientAddress}`, 20, 111, { maxWidth: 180 });
         
         // Add diagnosis
         doc.setFont('helvetica', 'bold');
