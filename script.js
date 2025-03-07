@@ -112,14 +112,27 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Adjust starting Y position for the rest of the content
             const startY = headerHeight + 20;
-            
-            // Update all Y positions below by adding startY to them
-            doc.text(clinicName, 105, startY + 20, { align: 'center' });
-            doc.text(clinicAddress, 105, startY + 30, { align: 'center', maxWidth: 180 });
-            doc.text(`Dr. ${doctorName}`, 20, startY + 45);
-            doc.text(`License: ${doctorLicense}`, 20, startY + 52);
         }
         
+        // Add patient info in a single line
+        doc.setFontSize(12);
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Name`, 20, 45);
+        doc.text(`${patientName}`, 60, 45);
+        doc.text(`Age`, 120, 45);
+        doc.text(`${patientAge}`, 140, 45);
+        doc.text(`Sex`, 160, 45);
+        doc.text(`${patientGender}`, 180, 45);
+        doc.text(`Date`, 200, 45);
+        doc.text(`${formatDate(date)}`, 230, 45);
+        
+        // Draw underlines
+        doc.setLineWidth(0.5);
+        doc.line(60, 46, 110, 46);  // Name underline
+        doc.line(140, 46, 155, 46); // Age underline
+        doc.line(180, 46, 195, 46); // Gender underline
+        doc.line(230, 46, 270, 46); // Date underline
+
         // Add prescription title
         doc.setFontSize(16);
         doc.setFont('helvetica', 'bold');
