@@ -245,8 +245,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const patientGender = document.getElementById('patientGender').value;
         
         const complaints = document.getElementById('complaints').value;
-        const comorbidities = document.getElementById('comorbidities').value;
-        const ongoingMedications = document.getElementById('ongoingMedications').value;
+        const comorbidities = document.getElementById('comorbidities').value || 'None';
+        const ongoingMedications = document.getElementById('ongoingMedications').value || 'None';
         const notes = document.getElementById('notes').value;
         const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
         
