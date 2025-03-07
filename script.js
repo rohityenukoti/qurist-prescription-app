@@ -567,11 +567,11 @@ function drawDoctorSeal(doc, x, y, doctorInfo) {
     // Draw inner circle
     doc.setDrawColor(0, 51, 102);
     doc.setLineWidth(0.3);
-    doc.circle(x, y + 5, 12);
+    doc.circle(x, y + 5, 13);
     
     // Add text inside the seal
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(5);
+    doc.setFontSize(6);
     doc.setTextColor(0, 51, 102);
     
     // Center all text vertically within the circle
@@ -579,7 +579,7 @@ function drawDoctorSeal(doc, x, y, doctorInfo) {
     doc.text(doctorInfo.name, x, y + 1, { align: 'center' });
     
     // Certified Medical Practitioner
-    doc.setFontSize(4);
+    doc.setFontSize(5);
     doc.text('Certified Medical Practitioner', x, y + 5, { align: 'center' });
     
     // Registration number
