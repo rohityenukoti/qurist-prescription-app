@@ -255,11 +255,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const doctorInfo = {
             dr_rohit: {
                 name: "Dr. Rohit Yenukoti",
-                designation: "MBBS"
+                designation: "MBBS",
+                regNo: "134654"
             },
             dr_rachna: {
                 name: "Dr. Rachna Chandra",
-                designation: "MBBS, MD"
+                designation: "MBBS, MD",
+                regNo: "DMC/R/2261"
             }
         };
 
@@ -483,6 +485,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 doc.addImage(signatureImg, 'PNG', 150, finalY - 5, signWidth, signHeight);
             }
             
+            // Add seal next to signature
+            drawDoctorSeal(doc, 120, finalY, selectedDoctor);
+            
             doc.line(140, finalY + 10, 190, finalY + 10);
             doc.text("Doctor's Signature", 165, finalY + 15, { align: 'center' });
             
@@ -547,4 +552,75 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initial resize
         autoResizeTextArea(textarea);
     });
-}); 
+});
+
+// Add this function to draw a realistic-looking seal
+function drawDoctorSeal(doc, x, y, doctorInfo) {
+    // Save current state
+    doc.saveGraphicsState();
+    
+    // Draw outer circle
+    doc.setDrawColor(0, 51, 102); // Dark blue
+    doc.setLineWidth(0.5);
+    doc.circle(x, y + 5, 15);
+    
+    // Draw inner circle
+    doc.setDrawColor(0, 51, 102);
+    doc.setLineWidth(0.3);
+    doc.circle(x, y + 5, 12);
+    
+    // Add text inside the seal
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(5);
+    doc.setTextColor(0, 51, 102);
+    
+    // Doctor name at the top of the circle
+    doc.text(doctorInfo.name, x, y - 3, { align: 'center' });
+    
+    // Certified Medical Practitioner
+    doc.setFontSize(4);
+    doc.text('Certified Medical Practitioner', x, y, { align: 'center' });
+    
+    // Registration number
+    doc.text(`Reg No: ${doctorInfo.regNo}`, x, y + 3, { align: 'center' });
+    
+    // Company name at the bottom
+    doc.text('Hemp Health Pvt Ltd', x, y + 7, { align: 'center' });
+    
+    // Add a star or emblem in the center
+    doc.setDrawColor(0, 51, 102);
+    drawStar(doc, x, y + 12, 3, 6, 3);
+    
+    // Restore previous state
+    doc.restoreGraphicsState();
+}
+
+// Helper function to draw a star shape for the seal
+function drawStar(doc, cx, cy, outerRadius, innerRadius, points) {
+    let angle = Math.PI / points;
+    
+    // Start at the top point
+    doc.setLineWidth(0.2);
+    doc.setFillColor(255, 255, 255, 0); // Transparent fill
+    
+    // Begin a new path
+    let path = [];
+    
+    for (let i = 0; i < points * 2; i++) {
+        let radius = i % 2 === 0 ? outerRadius : innerRadius;
+        let x = cx + radius * Math.sin(i * angle);
+        let y = cy - radius * Math.cos(i * angle);
+        
+        if (i === 0) {
+            path.push([x, y, 'm']);
+        } else {
+            path.push([x, y, 'l']);
+        }
+    }
+    
+    // Close the path
+    path.push(['h']);
+    
+    // Draw the path
+    doc.lines(path, 0, 0);
+} 
