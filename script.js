@@ -422,45 +422,40 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add notes if any
         if (notes) {
-            // Calculate height needed for notes
-            const splitNotes = doc.splitTextToSize(notes, 170);
+            // Calculate height needed for notes and footer
+            const splitNotes = doc.splitTextToSize(notes, 120);
             const notesHeight = splitNotes.length * 5 + 15; // Height for notes + header + padding
+            const footerHeight = 40; // Approximate height needed for footer
+            const totalNeededHeight = notesHeight + footerHeight;
             
-            // Check if there's enough space for the entire notes section
-            if (finalY + notesHeight > doc.internal.pageSize.height - 40) {
+            // Check if there's enough space for both notes and footer
+            if (finalY + totalNeededHeight > doc.internal.pageSize.height - 20) {
                 doc.addPage();
                 finalY = 20;
             }
             
+            // Add notes on the left side
             doc.setFont('helvetica', 'bold');
             doc.text('Additional Instructions:', 20, finalY);
             doc.setFont('helvetica', 'normal');
             doc.text(splitNotes, 20, finalY + 7);
+            
+            // Add signature on the right side at the same level
+            const signatureImg = document.getElementById(
+                doctorSelect === 'dr_rachna' ? 'rachnaSignature' : 'rohitSignature'
+            );
+            
+            if (signatureImg.complete && signatureImg.naturalHeight !== 0) {
+                const signWidth = 15;
+                const signHeight = (signWidth * signatureImg.naturalHeight) / signatureImg.naturalWidth;
+                doc.addImage(signatureImg, 'PNG', 150, finalY - 5, signWidth, signHeight);
+            }
+            
+            doc.line(140, finalY + 10, 190, finalY + 10);
+            doc.text("Doctor's Signature", 165, finalY + 15, { align: 'center' });
+            
             finalY += notesHeight;
         }
-        
-        // Add signature with page break check
-        const signatureHeight = 40; // Height needed for signature
-        if (finalY + signatureHeight > doc.internal.pageSize.height - 40) {
-            doc.addPage();
-            finalY = 20;
-        }
-        
-        const signatureY = finalY + 10;
-        
-        // Add signature image based on selected doctor
-        const signatureImg = document.getElementById(
-            doctorSelect === 'dr_rachna' ? 'rachnaSignature' : 'rohitSignature'
-        );
-        
-        if (signatureImg.complete && signatureImg.naturalHeight !== 0) {
-            const signWidth = 15; // Adjust signature width as needed
-            const signHeight = (signWidth * signatureImg.naturalHeight) / signatureImg.naturalWidth;
-            doc.addImage(signatureImg, 'PNG', 150, signatureY - signHeight, signWidth, signHeight);
-        }
-        
-        doc.line(140, signatureY, 190, signatureY);
-        doc.text("Doctor's Signature", 165, signatureY + 5, { align: 'center' });
         
         // Add footer image at the bottom of the last page
         const footerImg = document.getElementById('footerImage');
@@ -468,6 +463,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const footerAspectRatio = footerImg.naturalWidth / footerImg.naturalHeight;
             const footerWidth = 190;
             const footerHeight = footerWidth / footerAspectRatio;
+            // Position footer 10 units from bottom
             doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10,
                 footerWidth, footerHeight);
         }
