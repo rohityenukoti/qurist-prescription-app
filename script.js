@@ -552,6 +552,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // Initial resize
         autoResizeTextArea(textarea);
     });
+
+    // Add event listener for the Clear Form button
+    document.getElementById('clearFormBtn').addEventListener('click', function() {
+        window.location.reload(); // Refresh the page
+    });
 });
 
 // Add this function to draw a realistic-looking seal
