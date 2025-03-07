@@ -561,38 +561,52 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Add this function to draw a realistic-looking seal
 function drawDoctorSeal(doc, x, y, doctorInfo) {
-    // Save current state
-    doc.saveGraphicsState();
+    // Create a temporary canvas with higher resolution
+    const canvas = document.createElement('canvas');
+    canvas.width = 400;  // Increased from 100
+    canvas.height = 400; // Increased from 100
+    const ctx = canvas.getContext('2d');
     
-    // Draw outer circle
-    doc.setDrawColor(0, 51, 102); // Dark blue
-    doc.setLineWidth(0.5);
-    doc.circle(x, y + 5, 15);
+    // Clear canvas and set center point
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.translate(200, 200); // Adjusted for new canvas size
     
-    // Draw inner circle
-    doc.setDrawColor(0, 51, 102);
-    doc.setLineWidth(0.3);
-    doc.circle(x, y + 5, 13);
+    // Draw circles with adjusted sizes
+    ctx.strokeStyle = '#003366';
+    ctx.lineWidth = 8; // Increased from 2
+    ctx.beginPath();
+    ctx.arc(0, 0, 160, 0, Math.PI * 2); // Increased from 40
+    ctx.stroke();
     
-    // Add text inside the seal
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(0, 51, 102);
+    ctx.lineWidth = 4; // Increased from 1
+    ctx.beginPath();
+    ctx.arc(0, 0, 140, 0, Math.PI * 2); // Increased from 35
+    ctx.stroke();
     
-    // Center all text vertically within the circle
-    // Doctor name
-    doc.text(doctorInfo.name, x, y + 1, { align: 'center' });
+    // Apply rotation
+    ctx.rotate(Math.PI / 12);
     
-    // Certified Medical Practitioner
-    doc.setFontSize(5);
-    doc.text('Certified Medical Practitioner', x, y + 5, { align: 'center' });
+    // Add text with larger font sizes
+    ctx.fillStyle = '#003366';
+    ctx.textAlign = 'center';
     
-    // Registration number
-    doc.text(`Reg No: ${doctorInfo.regNo}`, x, y + 8, { align: 'center' });
+    // Doctor name at the top
+    ctx.font = 'bold 28px Arial'; // Increased from 7px
+    ctx.fillText(doctorInfo.name, 0, -60); // Adjusted position
     
-    // Company name at the bottom
-    doc.text('Hemp Health Pvt Ltd', x, y + 11, { align: 'center' });
+    // Registration info
+    ctx.font = '20px Arial'; // Increased from 5px
+    ctx.fillText('Certified Medical Practitioner', 0, 0);
+    ctx.fillText(`Reg No: ${doctorInfo.regNo}`, 0, 40);
+    ctx.fillText('Hemp Health Pvt Ltd', 0, 80);
     
-    // Restore previous state
-    doc.restoreGraphicsState();
+    // Add the canvas as an image to the PDF with the same final size
+    doc.addImage(
+        canvas.toDataURL('image/png'),
+        'PNG',
+        x - 20,
+        y - 15,
+        40,
+        40
+    );
 } 
