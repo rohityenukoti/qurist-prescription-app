@@ -184,23 +184,35 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'normal');
         doc.text(complaints, 20, 92, { maxWidth: 170 });
         
-        // Add comorbidities if any
+        // Create table for comorbidities and ongoing medications
         let currentY = doc.getTextDimensions(complaints, { maxWidth: 170 }).h + 100;
-        if (comorbidities) {
-            doc.setFont('helvetica', 'bold');
-            doc.text('Comorbidities:', 20, currentY);
-            doc.setFont('helvetica', 'normal');
-            doc.text(comorbidities, 20, currentY + 7, { maxWidth: 170 });
-            currentY += doc.getTextDimensions(comorbidities, { maxWidth: 170 }).h + 15;
-        }
-        
-        // Add ongoing medications if any
-        if (ongoingMedications) {
-            doc.setFont('helvetica', 'bold');
-            doc.text('Ongoing Medications:', 20, currentY);
-            doc.setFont('helvetica', 'normal');
-            doc.text(ongoingMedications, 20, currentY + 7, { maxWidth: 170 });
-            currentY += doc.getTextDimensions(ongoingMedications, { maxWidth: 170 }).h + 15;
+        if (comorbidities || ongoingMedications) {
+            const coMedColumns = ["Comorbidities", "Ongoing Medications"];
+            const coMedRows = [[comorbidities || "-", ongoingMedications || "-"]];
+            
+            doc.autoTable({
+                head: [coMedColumns],
+                body: coMedRows,
+                startY: currentY,
+                theme: 'plain',
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 3,
+                    lineColor: [240, 240, 240],
+                    lineWidth: 0.1
+                },
+                headStyles: {
+                    fillColor: false,
+                    textColor: [2, 113, 128],
+                    fontStyle: 'bold'
+                },
+                columnStyles: {
+                    0: { cellWidth: 85 },
+                    1: { cellWidth: 85 }
+                }
+            });
+            
+            currentY = doc.lastAutoTable.finalY + 10;
         }
         
         // Add medications
