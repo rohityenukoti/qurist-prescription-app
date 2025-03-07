@@ -60,11 +60,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to generate the prescription PDF
     function generatePrescriptionPDF() {
-        // Get form data without error checking (remove the '?' optional chaining)
-        const doctorName = document.getElementById('doctorName').value;
-        const doctorLicense = document.getElementById('doctorLicense').value;
-        const clinicName = document.getElementById('clinicName').value;
+        // Get form data
+        const doctorSelect = document.getElementById('doctorSelect').value;
         
+        // Define doctor information based on selection
+        const doctorInfo = {
+            dr_rohit: {
+                name: "Dr. Rohit Yenukoti",
+                designation: "MBBS"
+            },
+            dr_rachna: {
+                name: "Dr. Rachna Chandra",
+                designation: "MBBS, MD"
+            }
+        };
+
+        const selectedDoctor = doctorInfo[doctorSelect] || {};
+        
+        // Get other form data
         const patientName = document.getElementById('patientName').value;
         const patientAge = document.getElementById('patientAge').value;
         const patientGender = document.getElementById('patientGender').value;
@@ -155,6 +168,13 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.line(115, 46, 125, 46);  // Age underline
         doc.line(140, 46, 160, 46);  // Gender underline
         doc.line(176, 46, 205, 46);  // Date underline
+        
+        // Add doctor information on the right side
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text(selectedDoctor.name, 145, 60);
+        doc.setFontSize(10);
+        doc.text(selectedDoctor.designation, 145, 65);
         
         // Add diagnosis
         doc.setFont('helvetica', 'bold');
