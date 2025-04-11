@@ -200,6 +200,53 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // Add event listener for Save to Google Sheets button
+    document.getElementById('saveToSheetsBtn').addEventListener('click', async function() {
+        if (!isFormValid()) {
+            return;
+        }
+
+        try {
+            // Get all form data
+            const prescriptionData = {
+                date: document.getElementById('date').value,
+                doctorName: document.getElementById('doctorSelect').value === 'dr_rohit' 
+                    ? 'Dr. Rohit Yenukoti' 
+                    : 'Dr. Rachna Chandra',
+                patientName: document.getElementById('patientName').value,
+                patientAge: document.getElementById('patientAge').value,
+                patientGender: document.getElementById('patientGender').value,
+                complaints: document.getElementById('complaints').value,
+                comorbidities: document.getElementById('comorbidities').value || 'None',
+                ongoingMedications: document.getElementById('ongoingMedications').value || 'None',
+                medications: [],
+                notes: document.getElementById('notes').value
+            };
+
+            // Get medications
+            const medicationEntries = document.querySelectorAll('.medication-entry');
+            medicationEntries.forEach(entry => {
+                const medication = {
+                    name: entry.querySelector('.medication-name').value,
+                    dosage: entry.querySelector('.medication-dosage').value,
+                    instructions: entry.querySelector('.instructions-text').value
+                };
+                prescriptionData.medications.push(medication);
+            });
+
+            // Initialize Google API if not already initialized
+            await initGoogleAPI();
+            
+            // Save to Google Sheets
+            await savePrescriptionToSheet(prescriptionData);
+            
+            alert('Prescription data saved to Google Sheets successfully!');
+        } catch (error) {
+            console.error('Error saving to Google Sheets:', error);
+            alert('Error saving to Google Sheets. Please try again.');
+        }
+    });
+    
     // Function to check if the form is valid
     function isFormValid() {
         const requiredFields = {

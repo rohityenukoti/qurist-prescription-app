@@ -7,6 +7,8 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="sheets.js"></script>
 </head>
 <body>
     <!-- Add these hidden images right after the body tag -->
@@ -116,6 +118,7 @@
             <div class="form-actions">
                 <button type="button" id="generatePdfBtn">Generate Prescription</button>
                 <button type="button" id="clearFormBtn">Clear Form</button>
+                <button type="button" id="saveToSheetsBtn">Save to Google Sheets</button>
             </div>
         </form>
     </div>
