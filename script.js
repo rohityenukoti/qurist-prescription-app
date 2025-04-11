@@ -107,7 +107,15 @@ function addPageContinuationText(doc, pageNum, totalPages) {
 }
 
 // Wait for the DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+    // Initialize Google Sheets API
+    try {
+        await initGoogleSheetsAPI();
+        console.log('Google Sheets API initialized successfully');
+    } catch (error) {
+        console.error('Error initializing Google Sheets API:', error);
+    }
+
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
@@ -234,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Function to generate the prescription PDF
-    function generatePrescriptionPDF() {
+    async function generatePrescriptionPDF() {
         // Add medication name mapping
         const medicationDisplayNames = {
             'CBD mild': 'Qurist Wide Spectrum Mild Potency Oil',
@@ -525,6 +533,29 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
             addPageContinuationText(doc, i, totalPages);
+        }
+
+        // Prepare data for Google Sheets
+        const prescriptionData = {
+            date: formatDate(date),
+            doctorName: selectedDoctor.name,
+            patientName: patientName,
+            patientAge: patientAge,
+            patientGender: patientGender,
+            complaints: complaints,
+            comorbidities: comorbidities,
+            ongoingMedications: ongoingMedications,
+            medications: medications,
+            notes: notes
+        };
+
+        try {
+            // Save to Google Sheets
+            await savePrescriptionToSheet(prescriptionData);
+            console.log('Prescription data saved to Google Sheets successfully');
+        } catch (error) {
+            console.error('Error saving prescription data:', error);
+            alert('Prescription PDF generated, but there was an error saving to the database. Please try again or contact support.');
         }
 
         // Save the PDF
