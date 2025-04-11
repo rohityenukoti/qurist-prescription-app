@@ -10,26 +10,44 @@ const API_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 function initGoogleSheetsAPI() {
     return new Promise((resolve, reject) => {
         try {
+            console.log('Starting GAPI initialization...');
+            console.log('Current origin:', window.location.origin);
+            
             gapi.load('client:auth2', async () => {
                 console.log('GAPI client loaded, initializing...');
                 try {
-                    await gapi.client.init({
+                    const initConfig = {
                         apiKey: API_KEY,
                         clientId: CLIENT_ID,
                         scope: API_SCOPE,
                         discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
-                    });
-
+                    };
+                    console.log('Init config:', initConfig);
+                    
+                    await gapi.client.init(initConfig);
                     console.log('GAPI client initialized');
 
                     // Check if user is signed in
-                    const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
+                    const auth2 = gapi.auth2.getAuthInstance();
+                    console.log('Auth2 instance:', auth2);
+                    
+                    const isSignedIn = auth2.isSignedIn.get();
                     console.log('User sign-in status:', isSignedIn);
 
                     if (!isSignedIn) {
                         console.log('User not signed in, requesting sign-in...');
-                        await gapi.auth2.getAuthInstance().signIn();
-                        console.log('User signed in successfully');
+                        try {
+                            await auth2.signIn({
+                                prompt: 'select_account'
+                            });
+                            console.log('User signed in successfully');
+                        } catch (signInError) {
+                            console.error('Error during sign-in:', signInError);
+                            if (signInError.error === 'popup_blocked_by_browser') {
+                                alert('Please allow popups for this site to enable Google Sign-in');
+                            }
+                            throw signInError;
+                        }
                     }
 
                     resolve();
@@ -37,6 +55,10 @@ function initGoogleSheetsAPI() {
                     console.error('Error during GAPI initialization:', error);
                     if (error.details) {
                         console.error('Error details:', error.details);
+                    }
+                    if (error.error === 'idpiframe_initialization_failed') {
+                        console.error('Origin verification failed. Please ensure the origin is registered in the Google Cloud Console.');
+                        alert('Authorization Error: Please ensure you are accessing this site from an authorized domain.');
                     }
                     reject(error);
                 }
