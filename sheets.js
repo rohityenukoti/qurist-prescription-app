@@ -9,26 +9,54 @@ const API_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 // Initialize the Google Sheets API
 function initGoogleSheetsAPI() {
     return new Promise((resolve, reject) => {
-        gapi.load('client:auth2', () => {
-            gapi.client.init({
-                apiKey: API_KEY,
-                clientId: CLIENT_ID,
-                scope: API_SCOPE,
-                discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
-            }).then(() => {
-                // Check if user is signed in
-                if (!gapi.auth2.getAuthInstance().isSignedIn.get()) {
-                    gapi.auth2.getAuthInstance().signIn();
+        try {
+            gapi.load('client:auth2', async () => {
+                console.log('GAPI client loaded, initializing...');
+                try {
+                    await gapi.client.init({
+                        apiKey: API_KEY,
+                        clientId: CLIENT_ID,
+                        scope: API_SCOPE,
+                        discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+                    });
+
+                    console.log('GAPI client initialized');
+
+                    // Check if user is signed in
+                    const isSignedIn = gapi.auth2.getAuthInstance().isSignedIn.get();
+                    console.log('User sign-in status:', isSignedIn);
+
+                    if (!isSignedIn) {
+                        console.log('User not signed in, requesting sign-in...');
+                        await gapi.auth2.getAuthInstance().signIn();
+                        console.log('User signed in successfully');
+                    }
+
+                    resolve();
+                } catch (error) {
+                    console.error('Error during GAPI initialization:', error);
+                    if (error.details) {
+                        console.error('Error details:', error.details);
+                    }
+                    reject(error);
                 }
-                resolve();
-            }).catch(reject);
-        });
+            });
+        } catch (error) {
+            console.error('Error loading GAPI client:', error);
+            reject(error);
+        }
     });
 }
 
 // Save prescription data to Google Sheets
 async function savePrescriptionToSheet(prescriptionData) {
     try {
+        // Check if API is initialized and user is authenticated
+        if (!gapi.client || !gapi.auth2.getAuthInstance().isSignedIn.get()) {
+            console.log('API not initialized or user not signed in, attempting to initialize...');
+            await initGoogleSheetsAPI();
+        }
+
         // Format the data for Google Sheets
         const values = [
             [
@@ -45,6 +73,8 @@ async function savePrescriptionToSheet(prescriptionData) {
             ]
         ];
 
+        console.log('Attempting to save data to Google Sheets...');
+
         // Append the data to the sheet
         const response = await gapi.client.sheets.spreadsheets.values.append({
             spreadsheetId: SPREADSHEET_ID,
@@ -60,6 +90,9 @@ async function savePrescriptionToSheet(prescriptionData) {
         return response;
     } catch (error) {
         console.error('Error saving to Google Sheets:', error);
+        if (error.result && error.result.error) {
+            console.error('API Error details:', error.result.error);
+        }
         throw error;
     }
 }
