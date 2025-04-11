@@ -202,6 +202,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listener for Save to Google Sheets button
     document.getElementById('saveToSheetsBtn').addEventListener('click', async function() {
+        const button = this;
+        const originalText = button.textContent;
+        
         try {
             console.log('Save to Sheets button clicked');
             
@@ -211,9 +214,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             // Show loading state
-            const originalText = this.textContent;
-            this.textContent = 'Saving...';
-            this.disabled = true;
+            button.textContent = 'Saving...';
+            button.disabled = true;
 
             // Get all form data
             const prescriptionData = {
@@ -245,13 +247,11 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Collected form data:', prescriptionData);
 
             // Initialize Google API if not already initialized
-            if (typeof initGoogleAPI === 'function') {
-                await initGoogleAPI();
-            } else {
-                throw new Error('Google API initialization function not found');
+            if (typeof window.initGoogleAPI !== 'function') {
+                throw new Error('Google API initialization function not found. Make sure sheets.js is loaded properly.');
             }
-            
-            // Save to Google Sheets
+
+            // Wait for the entire save process to complete
             await savePrescriptionToSheet(prescriptionData);
             
             alert('Prescription data saved to Google Sheets successfully!');
@@ -260,7 +260,6 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Error saving to Google Sheets: ' + error.message);
         } finally {
             // Reset button state
-            const button = document.getElementById('saveToSheetsBtn');
             button.textContent = originalText;
             button.disabled = false;
         }

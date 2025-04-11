@@ -50,16 +50,7 @@ function initializeTokenClient(resolve, reject) {
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/spreadsheets',
-            callback: (tokenResponse) => {
-                if (tokenResponse && tokenResponse.access_token) {
-                    console.log('Access token received');
-                    accessToken = tokenResponse.access_token;
-                    resolve(tokenResponse);
-                } else {
-                    console.error('No access token in response:', tokenResponse);
-                    reject(new Error('Failed to get access token'));
-                }
-            },
+            callback: null,
             error_callback: (error) => {
                 console.error('Token client error:', error);
                 reject(error);
@@ -69,8 +60,10 @@ function initializeTokenClient(resolve, reject) {
         // Load the Google Sheets API
         loadSheetsAPI().then(() => {
             console.log('Google Sheets API loaded successfully');
+            resolve();
         }).catch(error => {
             console.error('Error loading Sheets API:', error);
+            reject(error);
         });
     } catch (error) {
         console.error('Error initializing token client:', error);
@@ -109,15 +102,36 @@ async function loadSheetsAPI() {
 
 // Request access token
 async function getAccessToken() {
-    if (!tokenClient) {
-        await initGoogleAPI();
-    }
-    
-    if (!accessToken) {
-        tokenClient.requestAccessToken();
-    }
-    
-    return accessToken;
+    return new Promise(async (resolve, reject) => {
+        try {
+            if (!tokenClient) {
+                console.log('Initializing Google API...');
+                await initGoogleAPI();
+            }
+            
+            if (!accessToken) {
+                console.log('Requesting access token...');
+                tokenClient.callback = (response) => {
+                    if (response.access_token) {
+                        console.log('Access token received in callback');
+                        accessToken = response.access_token;
+                        resolve(accessToken);
+                    } else {
+                        reject(new Error('Failed to get access token'));
+                    }
+                };
+                
+                tokenClient.requestAccessToken({
+                    prompt: 'consent'
+                });
+            } else {
+                resolve(accessToken);
+            }
+        } catch (error) {
+            console.error('Error in getAccessToken:', error);
+            reject(error);
+        }
+    });
 }
 
 // Save prescription data to Google Sheets
