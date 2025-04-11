@@ -106,6 +106,60 @@ function addPageContinuationText(doc, pageNum, totalPages) {
     }
 }
 
+// Add this function outside the DOMContentLoaded listener
+function resetForm() {
+    // Reset doctor selection
+    document.getElementById('doctorSelect').value = '';
+    
+    // Reset patient information
+    document.getElementById('patientName').value = '';
+    document.getElementById('patientAge').value = '';
+    document.getElementById('patientGender').value = '';
+    
+    // Reset medical information
+    document.getElementById('complaints').value = '';
+    document.getElementById('comorbidities').value = '';
+    document.getElementById('ongoingMedications').value = '';
+    
+    // Reset date to today
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').value = today;
+    
+    // Reset notes to default
+    const defaultNotes = [
+        "• Do not combine with alcohol, sleeping pills, or painkillers.",
+        "• Maximum 2 doses within 24 hours.", 
+        "• Store securely away from children.",
+        "• Not recommended during pregnancy or breastfeeding.",
+        "• Follow-up consultation after 1 month.",
+        "• Call +91 9485848844 if you experience any adverse events."
+    ].join('\n');
+    document.getElementById('notes').value = defaultNotes;
+    
+    // Remove all medication entries except the first one
+    const medicationsContainer = document.getElementById('medicationsContainer');
+    const medicationEntries = medicationsContainer.querySelectorAll('.medication-entry');
+    
+    // Keep the first entry but reset it
+    if (medicationEntries.length > 0) {
+        const firstEntry = medicationEntries[0];
+        firstEntry.querySelector('.medication-name').value = '';
+        firstEntry.querySelector('.medication-dosage').innerHTML = '<option value="">Select Dosage</option>';
+        firstEntry.querySelector('.instructions-checklist').innerHTML = '';
+        firstEntry.querySelector('.instructions-text').value = '';
+        
+        // Remove all other entries
+        for (let i = 1; i < medicationEntries.length; i++) {
+            medicationEntries[i].remove();
+        }
+    }
+    
+    // Remove invalid-field class from all fields
+    document.querySelectorAll('.invalid-field').forEach(field => {
+        field.classList.remove('invalid-field');
+    });
+}
+
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today
@@ -628,7 +682,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Add event listener for the Clear Form button
     document.getElementById('clearFormBtn').addEventListener('click', function() {
-        window.location.reload(); // Refresh the page
+        resetForm();
     });
 });
 
