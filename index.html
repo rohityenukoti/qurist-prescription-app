@@ -13,8 +13,19 @@
         font-src 'self' https://cdnjs.cloudflare.com data:;">
     <title>Digital Prescription Generator</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Load jsPDF and its dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script>
+        // Check if jsPDF is loaded
+        window.addEventListener('load', function() {
+            if (typeof window.jspdf === 'undefined') {
+                console.error('jsPDF library not loaded properly');
+            } else {
+                console.log('jsPDF library loaded successfully');
+            }
+        });
+    </script>
     <!-- Add Google Sheets API -->
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="sheets.js"></script>
