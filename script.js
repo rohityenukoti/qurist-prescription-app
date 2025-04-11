@@ -110,7 +110,7 @@ function addPageContinuationText(doc, pageNum, totalPages) {
 document.addEventListener('DOMContentLoaded', async function() {
     // Initialize Google Sheets API
     try {
-        await initGoogleSheetsAPI();
+        await initGoogleAPI();
         console.log('Google Sheets API initialized successfully');
     } catch (error) {
         console.error('Error initializing Google Sheets API:', error);
