@@ -3,7 +3,7 @@
 // Your Google Sheets API credentials
 const SPREADSHEET_ID = '1X0cIuwzusx1PNNHcyFeLunnZ9Y7x-d9BCdT0PAhQ_PU';
 const API_KEY = 'AIzaSyCpijuiQAj27q6FIVQF9AMv7aiGL8R2iiI';
-const CLIENT_ID = '135379719308-1rkd8i49mntdplmg1ghs1vf4t2vjho94.apps.googleusercontent.com';
+const CLIENT_ID = '135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleusercontent.com';
 const API_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
 
 // Initialize the Google Sheets API
