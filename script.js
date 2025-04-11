@@ -202,11 +202,19 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listener for Save to Google Sheets button
     document.getElementById('saveToSheetsBtn').addEventListener('click', async function() {
-        if (!isFormValid()) {
-            return;
-        }
-
         try {
+            console.log('Save to Sheets button clicked');
+            
+            if (!isFormValid()) {
+                console.log('Form validation failed');
+                return;
+            }
+
+            // Show loading state
+            const originalText = this.textContent;
+            this.textContent = 'Saving...';
+            this.disabled = true;
+
             // Get all form data
             const prescriptionData = {
                 date: document.getElementById('date').value,
@@ -234,16 +242,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 prescriptionData.medications.push(medication);
             });
 
+            console.log('Collected form data:', prescriptionData);
+
             // Initialize Google API if not already initialized
-            await initGoogleAPI();
+            if (typeof initGoogleAPI === 'function') {
+                await initGoogleAPI();
+            } else {
+                throw new Error('Google API initialization function not found');
+            }
             
             // Save to Google Sheets
             await savePrescriptionToSheet(prescriptionData);
             
             alert('Prescription data saved to Google Sheets successfully!');
         } catch (error) {
-            console.error('Error saving to Google Sheets:', error);
-            alert('Error saving to Google Sheets. Please try again.');
+            console.error('Error in save to sheets handler:', error);
+            alert('Error saving to Google Sheets: ' + error.message);
+        } finally {
+            // Reset button state
+            const button = document.getElementById('saveToSheetsBtn');
+            button.textContent = originalText;
+            button.disabled = false;
         }
     });
     
