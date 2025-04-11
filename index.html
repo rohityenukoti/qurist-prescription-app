@@ -3,33 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="
-        default-src 'self' https://*.google.com https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://rohityenukoti.github.io;
-        script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.google.com https://*.googleapis.com https://*.gstatic.com https://cdnjs.cloudflare.com https://rohityenukoti.github.io;
-        style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://*.googleapis.com;
-        frame-src 'self' https://*.google.com https://*.googleapis.com https://accounts.google.com;
-        img-src 'self' https://*.google.com https://*.googleapis.com https://*.gstatic.com data: blob:;
-        connect-src 'self' https://*.google.com https://*.googleapis.com https://accounts.google.com;
-        font-src 'self' https://cdnjs.cloudflare.com data:;">
     <title>Digital Prescription Generator</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Load jsPDF and its dependencies -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <script>
-        // Check if jsPDF is loaded
-        window.addEventListener('load', function() {
-            if (typeof window.jspdf === 'undefined') {
-                console.error('jsPDF library not loaded properly');
-            } else {
-                console.log('jsPDF library loaded successfully');
-            }
-        });
-    </script>
-    <!-- Add Google Sheets API -->
-    <script src="https://apis.google.com/js/api.js"></script>
-    <script src="sheets.js"></script>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <!-- Add these hidden images right after the body tag -->
@@ -38,10 +15,10 @@
     <img id="rxImage" src="rx.png" style="display: none;">
     <img id="rachnaSignature" src="rachna_sign.png" style="display: none;">
     <img id="rohitSignature" src="rohit_sign.png" style="display: none;">
-    
+
     <div class="container">
         <h1>Qurist Digital Prescription</h1>
-        
+
         <form id="prescriptionForm">
             <div class="form-section">
                 <div class="form-group">
@@ -80,17 +57,17 @@
                     <label for="complaints">Complaints:</label>
                     <textarea id="complaints" required></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="comorbidities">Comorbidities:</label>
                     <textarea id="comorbidities"></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="ongoingMedications">Ongoing Medications:</label>
                     <textarea id="ongoingMedications"></textarea>
                 </div>
-                
+
                 <div id="medicationsContainer">
                     <h2>Prescription</h2>
                     <div class="medication-entry">
@@ -122,14 +99,14 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <button type="button" id="addMedicationBtn">+ Add Another Medication</button>
-                
+
                 <div class="form-group">
                     <label for="notes">Additional Instructions:</label>
                     <textarea id="notes"></textarea>
                 </div>
-                
+
                 <div class="form-group">
                     <label for="date">Date:</label>
                     <input type="date" id="date" required>
@@ -145,4 +122,3 @@
 
     <script src="script.js"></script>
 </body>
-</html> 
