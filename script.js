@@ -594,16 +594,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const startY = headerHeight + 20;
         }
         
-        // Add Rx symbol
-        const rxImg = document.getElementById('rxImage');
-        if (rxImg.complete && rxImg.naturalHeight !== 0) {
-            const rxWidth = 18; // Small size for Rx symbol
-            const rxHeight = 20;
-            doc.addImage(rxImg, 'PNG', 20, 60, rxWidth, rxHeight);
-        }
-        
         // Add patient info in a single line with tighter spacing
-        doc.setFontSize(12);
+        doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
         
@@ -670,9 +662,18 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setLineWidth(0.5);
         doc.line(20, patientTableY - 3, 190, patientTableY - 3);
         
+        // Add Rx symbol
+        const rxImg = document.getElementById('rxImage');
+        if (rxImg.complete && rxImg.naturalHeight !== 0) {
+            const rxWidth = 18; // Small size for Rx symbol
+            const rxHeight = 20;
+            doc.addImage(rxImg, 'PNG', 20, patientTableY - 5, rxWidth, rxHeight);
+        }
+
         // Add doctor information on the right side
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
+        doc.setFontSize(12);
         doc.text(selectedDoctor.name, 145, patientTableY + 2);
         doc.setFontSize(10);
         doc.text(selectedDoctor.designation, 145, patientTableY + 7);
