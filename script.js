@@ -157,11 +157,6 @@ function resetForm() {
             medicationEntries[i].remove();
         }
     }
-    
-    // Remove invalid-field class from all fields
-    document.querySelectorAll('.invalid-field').forEach(field => {
-        field.classList.remove('invalid-field');
-    });
 }
 
 // Wait for the DOM to be fully loaded
@@ -288,7 +283,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listener to the "Generate Prescription" button
     document.getElementById('generatePdfBtn').addEventListener('click', function() {
-        if (isFormValid()) {
+        const doctorSelect = document.getElementById('doctorSelect').value;
+        if (!doctorSelect) {
+            alert('Please select a doctor to generate the prescription. This is required for the signature and seal.');
+        } else {
             generatePrescriptionPDF();
         }
     });
@@ -301,11 +299,6 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             console.log('Save to Sheets button clicked');
             
-            if (!isFormValid()) {
-                console.log('Form validation failed');
-                return;
-            }
-
             // Show loading state
             button.textContent = 'Saving...';
             button.disabled = true;
@@ -357,39 +350,6 @@ document.addEventListener('DOMContentLoaded', function() {
             button.disabled = false;
         }
     });
-    
-    // Function to check if the form is valid
-    function isFormValid() {
-        const requiredFields = {
-            'doctorSelect': 'Please select a doctor',
-            'patientName': 'Please enter patient name',
-            'patientAge': 'Please enter patient age',
-            'patientGender': 'Please select patient gender',
-            'complaints': 'Please enter patient complaints'
-        };
-
-        let isValid = true;
-        let errorMessages = [];
-
-        // Check each required field
-        for (const [fieldId, message] of Object.entries(requiredFields)) {
-            const field = document.getElementById(fieldId);
-            if (!field.value.trim()) {
-                isValid = false;
-                errorMessages.push(message);
-                field.classList.add('invalid-field'); // Add a visual indicator
-            } else {
-                field.classList.remove('invalid-field');
-            }
-        }
-
-        // If there are errors, show them to the user
-        if (!isValid) {
-            alert('Please fill in the following required fields:\n\n' + errorMessages.join('\n'));
-        }
-
-        return isValid;
-    }
     
     // Function to generate the prescription PDF
     function generatePrescriptionPDF() {
