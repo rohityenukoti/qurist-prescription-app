@@ -140,9 +140,7 @@ function addPageContinuationText(doc, pageNum, totalPages) {
 function getDefaultNotes(gender = '', medications = []) {
     const baseNotes = [
         "• Do not combine with alcohol, sleeping pills, or painkillers.",
-        "• Maximum 2 doses within 24 hours.", 
         "• Store securely away from children.",
-        "• Follow-up consultation after 1 month.",
         "• Call +91 9485848844 if you have any further queries.",
         "• Inform your treating physician about using CBD for your medical condition.",
         "• Follow sleep hygiene measures as discussed.",
@@ -195,6 +193,11 @@ function resetForm() {
     });
     document.getElementById('comorbidities').value = '';
     document.getElementById('ongoingMedications').value = '';
+    
+    // Reset follow-up
+    document.getElementById('followUpType').value = '';
+    document.getElementById('customFollowUpDate').value = '';
+    document.getElementById('customFollowUpDate').style.display = 'none';
     
     // Reset date to today
     const today = new Date().toISOString().split('T')[0];
@@ -253,6 +256,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
+    
+    // Add event listener for follow-up type
+    document.getElementById('followUpType').addEventListener('change', function() {
+        const customDateField = document.getElementById('customFollowUpDate');
+        if (this.value === 'custom') {
+            customDateField.style.display = 'block';
+            customDateField.focus();
+        } else {
+            customDateField.style.display = 'none';
+        }
+    });
     
     // Initialize complaints checklist
     const complaintsOptions = [
@@ -406,8 +420,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 comorbidities: document.getElementById('comorbidities').value || 'None',
                 ongoingMedications: document.getElementById('ongoingMedications').value || 'None',
                 medications: [],
-                notes: document.getElementById('notes').value
+                notes: document.getElementById('notes').value,
+                followUp: ''
             };
+
+            // Get follow-up information
+            const followUpType = document.getElementById('followUpType').value;
+            if (followUpType === '30-day') {
+                // Calculate date 30 days from prescription date
+                const prescriptionDate = new Date(prescriptionData.date);
+                const followUpDate = new Date(prescriptionDate);
+                followUpDate.setDate(followUpDate.getDate() + 30);
+                prescriptionData.followUp = followUpDate.toISOString().split('T')[0];
+            } else if (followUpType === 'custom') {
+                prescriptionData.followUp = document.getElementById('customFollowUpDate').value || '';
+            }
 
             // Get medications
             const medicationEntries = document.querySelectorAll('.medication-entry');
@@ -497,6 +524,22 @@ document.addEventListener('DOMContentLoaded', function() {
         const ongoingMedications = document.getElementById('ongoingMedications').value || 'None';
         const notes = document.getElementById('notes').value;
         const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
+        
+        // Get follow-up information
+        const followUpType = document.getElementById('followUpType').value;
+        let followUpText = '';
+        if (followUpType === '30-day') {
+            // Calculate date 30 days from prescription date
+            const prescriptionDate = new Date(date);
+            const followUpDate = new Date(prescriptionDate);
+            followUpDate.setDate(followUpDate.getDate() + 30);
+            followUpText = `Follow up consultation on ${formatDate(followUpDate.toISOString().split('T')[0])}`;
+        } else if (followUpType === 'custom') {
+            const customDate = document.getElementById('customFollowUpDate').value;
+            if (customDate) {
+                followUpText = `Follow up consultation on ${formatDate(customDate)}`;
+            }
+        }
         
         // Get medications (updated to use display names)
         const medications = [];
@@ -711,6 +754,14 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(0); // Set notes text to black
             doc.text(splitNotes, 20, finalY + 7);
+            
+            // Add follow-up text if available
+            if (followUpText) {
+                const followUpY = finalY + 7 + (splitNotes.length * 5) + 5;
+                doc.setFont('helvetica', 'bold');
+                doc.setTextColor(2, 113, 128);
+                doc.text(followUpText, 20, followUpY);
+            }
             
             // Add signature on the right side at the same level
             const signatureImg = document.getElementById(
