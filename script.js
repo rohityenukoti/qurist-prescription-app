@@ -205,6 +205,7 @@ function resetForm() {
     
     // Reset notes to default (without gender since it's been reset)
     document.getElementById('notes').value = getDefaultNotes();
+    autoResizeTextArea(document.getElementById('notes'));
     
     // Remove all medication entries except the first one
     const medicationsContainer = document.getElementById('medicationsContainer');
@@ -248,6 +249,7 @@ function updateNotesBasedOnMedications() {
     if (currentNotes.includes("• Do not combine with alcohol") && 
         currentNotes.includes("• Call +91 9485848844")) {
         notesTextarea.value = getDefaultNotes(gender, selectedMeds);
+        autoResizeTextArea(notesTextarea);
     }
 }
 
@@ -305,6 +307,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set default notes (initially without gender or medications)
     document.getElementById('notes').value = getDefaultNotes();
+    autoResizeTextArea(document.getElementById('notes'));
     
     // Add a change listener to update notes when gender is changed
     document.getElementById('patientGender').addEventListener('change', function() {
