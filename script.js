@@ -118,6 +118,10 @@ function resetForm() {
     
     // Reset medical information
     document.getElementById('complaints').value = '';
+    // Uncheck all complaints checkboxes
+    document.querySelectorAll('.complaints-checklist input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
     document.getElementById('comorbidities').value = '';
     document.getElementById('ongoingMedications').value = '';
     
@@ -165,6 +169,41 @@ document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
+    
+    // Initialize complaints checklist
+    const complaintsOptions = [
+        'Anxiety',
+        'Insomnia',
+        'Pain',
+        'Fatigue',
+        'Muscle Soreness',
+        'Overthinking',
+        'Menstrual Pain',
+        'Migraine'
+    ];
+    
+    const complaintsChecklistDiv = document.querySelector('.complaints-checklist');
+    complaintsOptions.forEach(complaint => {
+        const checkbox = document.createElement('div');
+        checkbox.className = 'checkbox-item';
+        checkbox.innerHTML = `
+            <input type="checkbox" value="${complaint}">
+            <label>${complaint}</label>
+        `;
+        complaintsChecklistDiv.appendChild(checkbox);
+    });
+
+    // Add event listener for complaints checkboxes
+    complaintsChecklistDiv.addEventListener('change', function(e) {
+        if (e.target.type === 'checkbox') {
+            const textArea = document.getElementById('complaints');
+            const selectedComplaints = Array.from(this.querySelectorAll('input:checked'))
+                .map(cb => cb.value)
+                .join('\n');
+            textArea.value = selectedComplaints;
+            autoResizeTextArea(textArea);
+        }
+    });
     
     // Add default notes
     const defaultNotes = [
