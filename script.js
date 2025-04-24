@@ -76,10 +76,11 @@ function updateInstructionOptions(medicationSelect) {
     // Add appropriate instruction options based on medication type
     const instructions = selectedMed.includes('CBD') || selectedMed.includes('THC') 
         ? [
-            'Under the Tongue -- 30 minutes before bedtime -- After Dinner',
-            'Under the Tongue -- After Breakfast',
-            'Under the Tongue -- After Lunch',
-            'Under the Tongue -- As and When Required (SOS)'
+            'Orally -- 30 minutes before bedtime -- After Dinner',
+            'Orally -- After Breakfast',
+            'Orally -- After Lunch',
+            'Orally -- As and When Required (SOS)',
+            'External Application -- As and When Required (SOS)'
         ]
         : [
             '30 minutes before bedtime -- After Dinner',
@@ -405,10 +406,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const medicationDisplayNames = {
             'CBD mild': 'Qurist Wide Spectrum Mild Potency Oil',
             'CBD medium': 'Qurist Wide Spectrum Medium Potency Oil',
-            'CBD strong': 'Qurist Wide Spectrum High Potency Oil',
+            'CBD strong': 'Qurist Wide Spectrum Strong Potency Oil',
             'CBD + THC mild': 'Qurist Full Spectrum Mild Potency Oil',
             'CBD + THC medium': 'Qurist Full Spectrum Medium Potency Oil',
-            'CBD + THC strong': 'Qurist Full Spectrum High Potency Oil',
+            'CBD + THC strong': 'Qurist Full Spectrum Strong Potency Oil',
             'Painaway Pills': 'Qurist Painaway Pills',
             'Periodaid Pills': 'Qurist Periodaid Pills',
             'Sleepeasy Gummies': 'Qurist Sleepeasy Gummies'
