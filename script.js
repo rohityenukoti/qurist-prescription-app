@@ -33,6 +33,35 @@ function updateDosageOptions(medicationSelect) {
         });
     }
     
+    // Add custom option
+    const customOption = new Option('Custom dosage...', 'custom');
+    dosageSelect.add(customOption);
+    
+    // Make sure the custom dosage textarea exists
+    let customDosageTextarea = medicationSelect.parentElement.parentElement.querySelector('.custom-dosage');
+    if (!customDosageTextarea) {
+        customDosageTextarea = document.createElement('textarea');
+        customDosageTextarea.className = 'custom-dosage';
+        customDosageTextarea.placeholder = 'Enter custom dosage here...';
+        customDosageTextarea.style.display = 'none';
+        medicationSelect.parentElement.parentElement.querySelector('.form-group:nth-child(2)').appendChild(customDosageTextarea);
+        
+        // Add auto-resize listener
+        customDosageTextarea.addEventListener('input', function() {
+            autoResizeTextArea(this);
+        });
+    }
+    
+    // Add change listener to the dosage select
+    dosageSelect.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customDosageTextarea.style.display = 'block';
+            customDosageTextarea.focus();
+        } else {
+            customDosageTextarea.style.display = 'none';
+        }
+    });
+    
     updateInstructionOptions(medicationSelect);
 }
 
@@ -151,6 +180,13 @@ function resetForm() {
         firstEntry.querySelector('.medication-dosage').innerHTML = '<option value="">Select Dosage</option>';
         firstEntry.querySelector('.instructions-checklist').innerHTML = '';
         firstEntry.querySelector('.instructions-text').value = '';
+        
+        // Reset custom dosage if it exists
+        const customDosage = firstEntry.querySelector('.custom-dosage');
+        if (customDosage) {
+            customDosage.value = '';
+            customDosage.style.display = 'none';
+        }
         
         // Remove all other entries
         for (let i = 1; i < medicationEntries.length; i++) {
@@ -322,9 +358,21 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get medications
             const medicationEntries = document.querySelectorAll('.medication-entry');
             medicationEntries.forEach(entry => {
+                const medicationName = entry.querySelector('.medication-name').value;
+                const dosageSelect = entry.querySelector('.medication-dosage');
+                
+                // Get dosage value (check for custom dosage)
+                let dosageValue;
+                if (dosageSelect.value === 'custom') {
+                    const customDosage = entry.querySelector('.custom-dosage');
+                    dosageValue = customDosage && customDosage.value ? customDosage.value : 'Custom dosage';
+                } else {
+                    dosageValue = dosageSelect.value;
+                }
+                
                 const medication = {
-                    name: entry.querySelector('.medication-name').value,
-                    dosage: entry.querySelector('.medication-dosage').value,
+                    name: medicationName,
+                    dosage: dosageValue,
                     instructions: entry.querySelector('.instructions-text').value
                 };
                 prescriptionData.medications.push(medication);
@@ -403,7 +451,17 @@ document.addEventListener('DOMContentLoaded', function() {
         medicationEntries.forEach(entry => {
             const selectedName = entry.querySelector('.medication-name').value;
             const displayName = medicationDisplayNames[selectedName] || selectedName;
-            const dosage = entry.querySelector('.medication-dosage').value;
+            const dosageSelect = entry.querySelector('.medication-dosage');
+            
+            // Get dosage value (check for custom dosage)
+            let dosage;
+            if (dosageSelect.value === 'custom') {
+                const customDosage = entry.querySelector('.custom-dosage');
+                dosage = customDosage && customDosage.value ? customDosage.value : 'Custom dosage';
+            } else {
+                dosage = dosageSelect.value;
+            }
+            
             const instructions = entry.querySelector('.instructions-text').value;
             
             medications.push({
