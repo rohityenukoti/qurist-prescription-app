@@ -608,10 +608,17 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setTextColor(2, 113, 128);
         
         // First group: Order ID
-        doc.text(`Order ID:`, 140, 30);
+        doc.text(`Order ID:`, 140, 25);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0); // Set to black
-        doc.text(`${orderId}`, 165, 30);
+        doc.text(`${orderId}`, 165, 25);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text(`Date:`, 140, 32);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0); // Set to black
+        doc.text(`${formatDate(date)}`, 165, 32);
         
         // First group: Name
         doc.setFont('helvetica', 'bold');
@@ -636,15 +643,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0); // Set to black
         doc.text(`${patientGender}`, 142, 45);
-        
-        // Fourth group: Date
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(2, 113, 128);
-        doc.text(`Date:`, 165, 45);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0); // Set to black
-        doc.text(`${formatDate(date)}`, 178, 45);
-        
+
         // Height and Weight
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
