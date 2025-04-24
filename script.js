@@ -599,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (rxImg.complete && rxImg.naturalHeight !== 0) {
             const rxWidth = 18; // Small size for Rx symbol
             const rxHeight = 20;
-            doc.addImage(rxImg, 'PNG', 20, 57, rxWidth, rxHeight);
+            doc.addImage(rxImg, 'PNG', 20, 60, rxWidth, rxHeight);
         }
         
         // Add patient info in a single line with tighter spacing
@@ -620,8 +620,11 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setTextColor(0); // Set to black
         doc.text(`${formatDate(date)}`, 165, 32);
         
-        // Replace individual text elements with a patient info table
-        // Create patient information table
+        // Add horizontal line above patient information table
+        doc.setDrawColor(2, 113, 128); // Use the same teal color as the headers
+        doc.setLineWidth(0.5);
+        doc.line(20, 40, 190, 40);
+        
         doc.autoTable({
             body: [
                 [
@@ -662,12 +665,17 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update current Y position after the table
         let patientTableY = doc.lastAutoTable.finalY + 5;
         
+        // Add horizontal line below patient information table
+        doc.setDrawColor(2, 113, 128); // Use the same teal color as the headers
+        doc.setLineWidth(0.5);
+        doc.line(20, patientTableY - 3, 190, patientTableY - 3);
+        
         // Add doctor information on the right side
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
-        doc.text(selectedDoctor.name, 145, patientTableY);
+        doc.text(selectedDoctor.name, 145, patientTableY + 2);
         doc.setFontSize(10);
-        doc.text(selectedDoctor.designation, 145, patientTableY + 5);
+        doc.text(selectedDoctor.designation, 145, patientTableY + 7);
         
         // Add complaints
         doc.setFont('helvetica', 'bold');
