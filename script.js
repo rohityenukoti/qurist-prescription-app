@@ -620,62 +620,65 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setTextColor(0); // Set to black
         doc.text(`${formatDate(date)}`, 165, 32);
         
-        // First group: Name
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(2, 113, 128);
-        doc.text(`Name:`, 20, 45);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0); // Set to black
-        doc.text(`${patientName}`, 37, 45);
+        // Replace individual text elements with a patient info table
+        // Create patient information table
+        doc.autoTable({
+            body: [
+                [
+                    { content: "Name:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                    patientName, 
+                    { content: "Age:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                    patientAge, 
+                    { content: "Sex:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                    patientGender
+                ],
+                [
+                    { content: "Height:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                    `${patientHeight} cm`, 
+                    { content: "Weight:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                    `${patientWeight} kg`,
+                    "", 
+                    ""
+                ]
+            ],
+            startY: 42,
+            margin: { left: 20, right: 20 },
+            theme: 'plain',
+            styles: {
+                fontSize: 10,
+                cellPadding: 2,
+                lineWidth: 0 // No border lines
+            },
+            columnStyles: {
+                0: { cellWidth: 30 }, // Label
+                1: { cellWidth: 40 }, // Value
+                2: { cellWidth: 20 }, // Label
+                3: { cellWidth: 25 }, // Value
+                4: { cellWidth: 20 }, // Label
+                5: { cellWidth: 35 }  // Value
+            }
+        });
         
-        // Second group: Age
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(2, 113, 128);
-        doc.text(`Age:`, 105, 45);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0); // Set to black
-        doc.text(`${patientAge}`, 117, 45);
-        
-        // Third group: Sex
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(2, 113, 128);
-        doc.text(`Sex:`, 130, 45);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0); // Set to black
-        doc.text(`${patientGender}`, 142, 45);
-
-        // Height and Weight
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(2, 113, 128);
-        doc.text(`Height:`, 20, 55);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0); // Set to black
-        doc.text(`${patientHeight} cm`, 39, 55);
-        
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(2, 113, 128);
-        doc.text(`Weight:`, 80, 55);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0); // Set to black
-        doc.text(`${patientWeight} kg`, 99, 55);
+        // Update current Y position after the table
+        let patientTableY = doc.lastAutoTable.finalY + 5;
         
         // Add doctor information on the right side
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
-        doc.text(selectedDoctor.name, 145, 60);
+        doc.text(selectedDoctor.name, 145, patientTableY);
         doc.setFontSize(10);
-        doc.text(selectedDoctor.designation, 145, 65);
+        doc.text(selectedDoctor.designation, 145, patientTableY + 5);
         
         // Add complaints
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
-        doc.text('Complaints:', 20, 85);
+        doc.text('Complaints:', 20, patientTableY + 20);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0); // Set to black
-        doc.text(complaints, 20, 92, { maxWidth: 170 });
+        doc.text(complaints, 20, patientTableY + 27, { maxWidth: 170 });
         
         // Create table for comorbidities and ongoing medications
-        let currentY = doc.getTextDimensions(complaints, { maxWidth: 170 }).h + 100;
+        let currentY = doc.getTextDimensions(complaints, { maxWidth: 170 }).h + patientTableY + 35;
         if (comorbidities || ongoingMedications) {
             const coMedColumns = ["Comorbidities", "Ongoing Medications"];
             const coMedRows = [[comorbidities || "-", ongoingMedications || "-"]];
