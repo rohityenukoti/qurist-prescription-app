@@ -137,6 +137,47 @@ function addPageContinuationText(doc, pageNum, totalPages) {
 }
 
 // Add this function outside the DOMContentLoaded listener
+function getDefaultNotes(gender = '', medications = []) {
+    const baseNotes = [
+        "• Do not combine with alcohol, sleeping pills, or painkillers.",
+        "• Maximum 2 doses within 24 hours.", 
+        "• Store securely away from children.",
+        "• Follow-up consultation after 1 month.",
+        "• Call +91 9485848844 if you have any further queries.",
+        "• Inform your treating physician about using CBD for your medical condition.",
+        "• Follow sleep hygiene measures as discussed.",
+        "• Maintain age-appropriate healthy nutrition and physical activity as discussed for your medical condition."
+    ];
+    
+    // Add pregnancy note only for female patients
+    if (gender.toLowerCase() === 'female') {
+        baseNotes.splice(3, 0, "• Not recommended during pregnancy or breastfeeding or planning to conceive.");
+    }
+    
+    // Check for oils (CBD, THC)
+    const hasOils = medications.some(med => 
+        med.toLowerCase().includes('cbd') || 
+        med.toLowerCase().includes('thc'));
+    
+    // Check for pills or gummies
+    const hasPillsOrGummies = medications.some(med => 
+        med.toLowerCase().includes('pills') || 
+        med.toLowerCase().includes('gummies'));
+    
+    // Add conditional rest instructions
+    if (hasOils) {
+        baseNotes.push("• Rest for 6 hours after consuming CBD oils.");
+        baseNotes.push("• If relief is insufficient, dosage may be gradually increased by 0.25ml increments up to a maximum of 1ml per day.");
+    }
+    
+    if (hasPillsOrGummies) {
+        baseNotes.push("• Rest and hydrate well the day after consuming CBD pills or gummies.");
+    }
+    
+    return baseNotes.join('\n');
+}
+
+// Add this function outside the DOMContentLoaded listener
 function resetForm() {
     // Reset doctor selection
     document.getElementById('doctorSelect').value = '';
@@ -159,16 +200,8 @@ function resetForm() {
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
     
-    // Reset notes to default
-    const defaultNotes = [
-        "• Do not combine with alcohol, sleeping pills, or painkillers.",
-        "• Maximum 2 doses within 24 hours.", 
-        "• Store securely away from children.",
-        "• Not recommended during pregnancy or breastfeeding.",
-        "• Follow-up consultation after 1 month.",
-        "• Call +91 9485848844 if you experience any adverse events."
-    ].join('\n');
-    document.getElementById('notes').value = defaultNotes;
+    // Reset notes to default (without gender since it's been reset)
+    document.getElementById('notes').value = getDefaultNotes();
     
     // Remove all medication entries except the first one
     const medicationsContainer = document.getElementById('medicationsContainer');
@@ -193,6 +226,25 @@ function resetForm() {
         for (let i = 1; i < medicationEntries.length; i++) {
             medicationEntries[i].remove();
         }
+    }
+}
+
+// Add function to update notes based on selected medications
+function updateNotesBasedOnMedications() {
+    const gender = document.getElementById('patientGender').value;
+    const medicationSelects = document.querySelectorAll('.medication-name');
+    const selectedMeds = Array.from(medicationSelects)
+        .map(select => select.value)
+        .filter(value => value); // Remove empty values
+    
+    // Only update if notes appear to be in the default state
+    const currentNotes = document.getElementById('notes').value;
+    const notesTextarea = document.getElementById('notes');
+    
+    // Check if it's likely the default notes (contains our common starting points)
+    if (currentNotes.includes("• Do not combine with alcohol") && 
+        currentNotes.includes("• Call +91 9485848844")) {
+        notesTextarea.value = getDefaultNotes(gender, selectedMeds);
     }
 }
 
@@ -237,17 +289,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Add default notes
-    const defaultNotes = [
-        "• Do not combine with alcohol, sleeping pills, or painkillers.",
-        "• Maximum 2 doses within 24 hours.", 
-        "• Store securely away from children.",
-        "• Not recommended during pregnancy or breastfeeding.",
-        "• Follow-up consultation after 1 month.",
-        "• Call +91 9485848844 if you experience any adverse events."
-    ].join('\n');
+    // Set default notes (initially without gender or medications)
+    document.getElementById('notes').value = getDefaultNotes();
     
-    document.getElementById('notes').value = defaultNotes;
+    // Add a change listener to update notes when gender is changed
+    document.getElementById('patientGender').addEventListener('change', function() {
+        updateNotesBasedOnMedications();
+    });
     
     // Initialize medication counter
     let medicationCounter = 1;
@@ -315,6 +363,11 @@ document.addEventListener('DOMContentLoaded', function() {
             textarea.addEventListener('input', function() {
                 autoResizeTextArea(this);
             });
+        });
+
+        // After adding a new medication, we need to add the change listener to its select
+        medicationEntry.querySelector('.medication-name').addEventListener('change', function() {
+            updateNotesBasedOnMedications();
         });
     });
     
@@ -741,6 +794,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listener for the Clear Form button
     document.getElementById('clearFormBtn').addEventListener('click', function() {
         resetForm();
+    });
+
+    // Add event delegation for medication changes
+    document.getElementById('medicationsContainer').addEventListener('change', function(e) {
+        if (e.target.classList.contains('medication-name')) {
+            // Update dosage options (existing functionality)
+            updateDosageOptions(e.target);
+            
+            // Also update notes based on medications
+            updateNotesBasedOnMedications();
+        }
     });
 });
 
