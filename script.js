@@ -181,9 +181,12 @@ function resetForm() {
     document.getElementById('doctorSelect').value = '';
     
     // Reset patient information
+    document.getElementById('orderId').value = '';
     document.getElementById('patientName').value = '';
     document.getElementById('patientAge').value = '';
     document.getElementById('patientGender').value = '';
+    document.getElementById('patientHeight').value = '';
+    document.getElementById('patientWeight').value = '';
     
     // Reset medical information
     document.getElementById('complaints').value = '';
@@ -416,9 +419,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 doctorName: document.getElementById('doctorSelect').value === 'dr_rohit' 
                     ? 'Dr. Rohit Yenukoti' 
                     : 'Dr. Rachna Chandra',
+                orderId: document.getElementById('orderId').value,
                 patientName: document.getElementById('patientName').value,
                 patientAge: document.getElementById('patientAge').value,
                 patientGender: document.getElementById('patientGender').value,
+                patientHeight: document.getElementById('patientHeight').value,
+                patientWeight: document.getElementById('patientWeight').value,
                 complaints: document.getElementById('complaints').value,
                 comorbidities: document.getElementById('comorbidities').value || 'None',
                 ongoingMedications: document.getElementById('ongoingMedications').value || 'None',
@@ -518,9 +524,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const selectedDoctor = doctorInfo[doctorSelect] || {};
         
         // Get other form data
+        const orderId = document.getElementById('orderId').value;
         const patientName = document.getElementById('patientName').value;
         const patientAge = document.getElementById('patientAge').value;
         const patientGender = document.getElementById('patientGender').value;
+        const patientHeight = document.getElementById('patientHeight').value;
+        const patientWeight = document.getElementById('patientWeight').value;
         
         const complaints = document.getElementById('complaints').value;
         const comorbidities = document.getElementById('comorbidities').value || 'None';
@@ -590,7 +599,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (rxImg.complete && rxImg.naturalHeight !== 0) {
             const rxWidth = 18; // Small size for Rx symbol
             const rxHeight = 20;
-            doc.addImage(rxImg, 'PNG', 20, 55, rxWidth, rxHeight);
+            doc.addImage(rxImg, 'PNG', 20, 57, rxWidth, rxHeight);
         }
         
         // Add patient info in a single line with tighter spacing
@@ -598,7 +607,15 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
         
+        // First group: Order ID
+        doc.text(`Order ID:`, 140, 30);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0); // Set to black
+        doc.text(`${orderId}`, 165, 30);
+        
         // First group: Name
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
         doc.text(`Name:`, 20, 45);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0); // Set to black
@@ -628,13 +645,20 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setTextColor(0); // Set to black
         doc.text(`${formatDate(date)}`, 178, 45);
         
-        // Draw underlines with adjusted widths
-        doc.setLineWidth(0.5);
-        doc.setDrawColor(2, 113, 128); // Set Blue Lagoon color for underlines
-        doc.line(35, 46, 100, 46);   // Name underline
-        doc.line(115, 46, 125, 46);  // Age underline
-        doc.line(140, 46, 160, 46);  // Gender underline
-        doc.line(176, 46, 205, 46);  // Date underline
+        // Height and Weight
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text(`Height:`, 20, 55);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0); // Set to black
+        doc.text(`${patientHeight} cm`, 39, 55);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text(`Weight:`, 80, 55);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0); // Set to black
+        doc.text(`${patientWeight} kg`, 99, 55);
         
         // Add doctor information on the right side
         doc.setFont('helvetica', 'bold');
@@ -850,7 +874,7 @@ document.addEventListener('DOMContentLoaded', function() {
         resetForm();
     });
 
-    // Add event delegation for medication changes
+    // Add delegation for medication changes
     document.getElementById('medicationsContainer').addEventListener('change', function(e) {
         if (e.target.classList.contains('medication-name')) {
             // Update dosage options (existing functionality)
