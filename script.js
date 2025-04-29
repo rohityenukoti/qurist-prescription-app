@@ -141,7 +141,6 @@ function getDefaultNotes(gender = '', medications = []) {
     const baseNotes = [
         "• Do not combine with alcohol, sleeping pills, or painkillers.",
         "• Store securely away from children.",
-        "• Call +91 9485848844 if you have any further queries.",
         "• Inform your treating physician about using CBD for your medical condition.",
         "• Follow sleep hygiene measures as discussed.",
         "• Maintain age-appropriate healthy nutrition and physical activity as discussed for your medical condition."
@@ -251,7 +250,7 @@ function updateNotesBasedOnMedications() {
     
     // Check if it's likely the default notes (contains our common starting points)
     if (currentNotes.includes("• Do not combine with alcohol") && 
-        currentNotes.includes("• Call +91 9485848844")) {
+        currentNotes.includes("• Store securely away from children")) {
         notesTextarea.value = getDefaultNotes(gender, selectedMeds);
         autoResizeTextArea(notesTextarea);
     }
@@ -842,7 +841,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add new sections for telehealth notice, validity, travel disclaimer, and disclaimer
         // Check if we need a new page based on available space
-        const additionalSectionsHeight = 90; // Approximate height needed for all additional sections including follow-up
+        const additionalSectionsHeight = 105; // Approximate height needed for all additional sections including follow-up and contact information
         if (finalY + additionalSectionsHeight > doc.internal.pageSize.height - 20) {
             doc.addPage();
             finalY = 20;
@@ -917,6 +916,17 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
         doc.text('This prescription is solely for therapeutic purposes and should not be used for medico-legal purposes.', 
+            20, finalY + 7);
+        
+        finalY += 15;
+        
+        // Add Contact Information section
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Contact Information:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        doc.text('For any further queries, please contact: +91 9485848844', 
             20, finalY + 7);
         
         finalY += 15;
