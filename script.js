@@ -988,11 +988,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Position footer 10 units from bottom on this new page
                 doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10,
                     footerWidth, footerHeight);
+                
+                // Add custom footer info below the footer image
+                addCustomFooterInfo(doc, doc.internal.pageSize.height - 10);
             } else {
                 // Position footer 10 units from bottom with sufficient space
                 doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10,
                     footerWidth, footerHeight);
+                
+                // Add custom footer info below the footer image
+                addCustomFooterInfo(doc, doc.internal.pageSize.height - 10);
             }
+        } else {
+            // If no footer image exists, still add the custom footer info
+            addCustomFooterInfo(doc, doc.internal.pageSize.height - 30);
         }
         
         // Before saving the PDF, add the final page count
@@ -1007,6 +1016,12 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
             addPageContinuationText(doc, i, totalPages);
+            
+            // Add custom footer to all pages except the last one (which already has it)
+            if (i < totalPages) {
+                // Remove this line to keep the footer only on the last page
+                // addCustomFooterInfo(doc, doc.internal.pageSize.height - 30);
+            }
         }
 
         // Save the PDF
@@ -1109,4 +1124,36 @@ function drawDoctorSeal(doc, x, y, doctorInfo) {
         40,
         40
     );
+}
+
+// Add this function at the top level
+function addCustomFooterInfo(doc, y) {
+    // Set font and color for footer text
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255); // Change to white color
+    
+    // Adjust vertical position - move everything up by adjusting y coordinate
+    const adjustedY = y - 25; // Move the footer up by 25 units
+    
+    // Add company name
+    doc.text('Hemp Health Pvt. Ltd.', doc.internal.pageSize.width / 2, adjustedY, { align: 'center' });
+    
+    // Add CIN number
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.text('CIN No. U2423 | HR2020PTC087774', doc.internal.pageSize.width / 2, adjustedY + 5, { align: 'center' });
+    
+    // Add social media and website links with pseudo-icons
+    const websiteText = '\u{1F310} www.qurist.in';
+    const instagramText = '\u{1F4F7} @quristcbd';
+    const facebookText = '\u{1F4E2} @quristcbd';
+    
+    // Calculate positions for the three links to be evenly spaced
+    const totalWidth = doc.internal.pageSize.width - 40; // leaving 20 units margin on each side
+    const spacing = totalWidth / 3;
+    
+    doc.text(websiteText, 20 + spacing / 2, adjustedY + 12, { align: 'center' });
+    doc.text(instagramText, 20 + spacing + spacing / 2, adjustedY + 12, { align: 'center' });
+    doc.text(facebookText, 20 + 2 * spacing + spacing / 2, adjustedY + 12, { align: 'center' });
 } 
