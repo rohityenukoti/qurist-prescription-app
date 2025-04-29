@@ -50,7 +50,13 @@ function initializeTokenClient(resolve, reject) {
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID,
             scope: 'https://www.googleapis.com/auth/spreadsheets',
-            callback: null,
+            callback: (tokenResponse) => {
+                if (tokenResponse && tokenResponse.access_token) {
+                    console.log('Access token received in initialization');
+                    accessToken = tokenResponse.access_token;
+                    resolve();
+                }
+            },
             error_callback: (error) => {
                 console.error('Token client error:', error);
                 reject(error);
@@ -149,19 +155,31 @@ async function savePrescriptionToSheet(prescriptionData) {
             throw new Error('Failed to obtain access token');
         }
 
+        // Calculate prescription validity date (6 months from current date)
+        const today = new Date();
+        const sixMonthsLater = new Date(today);
+        sixMonthsLater.setMonth(today.getMonth() + 6);
+        const validityDate = sixMonthsLater.toISOString().split('T')[0];
+
         // Format the data for Google Sheets
         const values = [
             [
                 prescriptionData.date,
                 prescriptionData.doctorName,
+                prescriptionData.orderId || '',
                 prescriptionData.patientName,
                 prescriptionData.patientAge,
                 prescriptionData.patientGender,
+                prescriptionData.patientHeight || '',
+                prescriptionData.patientWeight || '',
                 prescriptionData.complaints,
                 prescriptionData.comorbidities,
                 prescriptionData.ongoingMedications,
+                prescriptionData.diagnosis || '',
                 JSON.stringify(prescriptionData.medications),
-                prescriptionData.notes
+                prescriptionData.notes,
+                prescriptionData.followUp || '',
+                validityDate
             ]
         ];
 
@@ -169,7 +187,7 @@ async function savePrescriptionToSheet(prescriptionData) {
         console.log('Attempting to save data to Google Sheets...');
 
         // Append the data to the sheet using fetch API
-        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!A:J:append?valueInputOption=RAW`, {
+        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!A:P:append?valueInputOption=RAW`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
