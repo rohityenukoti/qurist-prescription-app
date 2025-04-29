@@ -196,6 +196,7 @@ function resetForm() {
     });
     document.getElementById('comorbidities').value = '';
     document.getElementById('ongoingMedications').value = '';
+    document.getElementById('diagnosis').value = '';
     
     // Reset follow-up
     document.getElementById('followUpType').value = '';
@@ -428,6 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 complaints: document.getElementById('complaints').value,
                 comorbidities: document.getElementById('comorbidities').value || 'None',
                 ongoingMedications: document.getElementById('ongoingMedications').value || 'None',
+                diagnosis: document.getElementById('diagnosis').value || 'None',
                 medications: [],
                 notes: document.getElementById('notes').value,
                 followUp: ''
@@ -534,6 +536,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const complaints = document.getElementById('complaints').value;
         const comorbidities = document.getElementById('comorbidities').value || 'None';
         const ongoingMedications = document.getElementById('ongoingMedications').value || 'None';
+        const diagnosis = document.getElementById('diagnosis').value || 'None';
         const notes = document.getElementById('notes').value;
         const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
         
@@ -716,6 +719,17 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             
             currentY = doc.lastAutoTable.finalY + 10;
+        }
+        
+        // Add Diagnosis section
+        if (diagnosis) {
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(2, 113, 128);
+            doc.text('Diagnosis:', 20, currentY);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0); // Set to black
+            doc.text(diagnosis, 20, currentY + 7, { maxWidth: 170 });
+            currentY = doc.getTextDimensions(diagnosis, { maxWidth: 170 }).h + currentY + 15;
         }
         
         // Add medications with complete table handling
