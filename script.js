@@ -918,7 +918,45 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('This prescription is solely for therapeutic purposes and should not be used for medico-legal purposes.', 
             20, finalY + 7);
         
+        // Add Patient Responsibility section
         finalY += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Patient Responsibility:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        const patientResponsibility = 'Patient acknowledges that they will be held responsible for any consequences arising from overdose or misuse of the prescribed CBD product.';
+        const splitPatientResponsibility = doc.splitTextToSize(patientResponsibility, 170);
+        doc.text(splitPatientResponsibility, 20, finalY + 7);
+        
+        // Update finalY after patient responsibility
+        finalY += 7 + (splitPatientResponsibility.length * 5);
+        
+        // Add Doctor's Liability section
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Doctor\'s Liability:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        const doctorLiability = 'The prescribing doctor will not be held responsible for any misuse or adverse effects resulting from patient non-compliance with dosage instructions.';
+        const splitDoctorLiability = doc.splitTextToSize(doctorLiability, 170);
+        doc.text(splitDoctorLiability, 20, finalY + 7);
+        
+        // Update finalY after doctor liability
+        finalY += 7 + (splitDoctorLiability.length * 5);
+        
+        // Add Monitoring section
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Monitoring:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        const monitoring = 'Patient agrees to report any changes in symptoms, side effects, or concerns to the prescribing doctor.';
+        const splitMonitoring = doc.splitTextToSize(monitoring, 170);
+        doc.text(splitMonitoring, 20, finalY + 7);
+        
+        // Update finalY after monitoring
+        finalY += 7 + (splitMonitoring.length * 5);
         
         // Add Contact Information section
         doc.setFont('helvetica', 'bold');
