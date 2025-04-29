@@ -1144,16 +1144,46 @@ function addCustomFooterInfo(doc, y) {
     doc.setFontSize(9);
     doc.text('CIN No. U2423 | HR2020PTC087774', doc.internal.pageSize.width / 2, adjustedY + 5, { align: 'center' });
     
-    // Add social media and website links with pseudo-icons
-    const websiteText = '\u{1F310} www.qurist.in';
-    const instagramText = '\u{1F4F7} @quristcbd';
-    const facebookText = '\u{1F4E2} @quristcbd';
+    // Add social media and website links with images
+    const websiteText = 'www.qurist.in';
+    const instagramText = '@quristcbd';
+    const facebookText = '@quristcbd';
     
     // Calculate positions for the three links to be evenly spaced
     const totalWidth = doc.internal.pageSize.width - 40; // leaving 20 units margin on each side
     const spacing = totalWidth / 3;
     
-    doc.text(websiteText, 20 + spacing / 2, adjustedY + 12, { align: 'center' });
-    doc.text(instagramText, 20 + spacing + spacing / 2, adjustedY + 12, { align: 'center' });
-    doc.text(facebookText, 20 + 2 * spacing + spacing / 2, adjustedY + 12, { align: 'center' });
+    // Get the social media icons
+    const websiteImg = document.getElementById('websiteImage');
+    const instagramImg = document.getElementById('instagramImage');
+    const facebookImg = document.getElementById('facebookImage');
+    
+    // Icon size and positioning
+    const iconWidth = 5;
+    const iconHeight = 5;
+    const iconSpacing = 2;
+    
+    // Position for website
+    if (websiteImg && websiteImg.complete && websiteImg.naturalHeight !== 0) {
+        doc.addImage(websiteImg, 'PNG', 20 + spacing / 2 - 15, adjustedY + 9, iconWidth, iconHeight);
+        doc.text(websiteText, 20 + spacing / 2 - 15 + iconWidth + iconSpacing, adjustedY + 12.5);
+    } else {
+        doc.text('🌐 ' + websiteText, 20 + spacing / 2, adjustedY + 12, { align: 'center' });
+    }
+    
+    // Position for Instagram
+    if (instagramImg && instagramImg.complete && instagramImg.naturalHeight !== 0) {
+        doc.addImage(instagramImg, 'PNG', 20 + spacing + spacing / 2 - 15, adjustedY + 9, iconWidth, iconHeight);
+        doc.text(instagramText, 20 + spacing + spacing / 2 - 15 + iconWidth + iconSpacing, adjustedY + 12.5);
+    } else {
+        doc.text('📷 ' + instagramText, 20 + spacing + spacing / 2, adjustedY + 12, { align: 'center' });
+    }
+    
+    // Position for Facebook
+    if (facebookImg && facebookImg.complete && facebookImg.naturalHeight !== 0) {
+        doc.addImage(facebookImg, 'PNG', 20 + 2 * spacing + spacing / 2 - 15, adjustedY + 9, iconWidth, iconHeight);
+        doc.text(facebookText, 20 + 2 * spacing + spacing / 2 - 15 + iconWidth + iconSpacing, adjustedY + 12.5);
+    } else {
+        doc.text('📢 ' + facebookText, 20 + 2 * spacing + spacing / 2, adjustedY + 12, { align: 'center' });
+    }
 } 
