@@ -975,9 +975,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const footerAspectRatio = footerImg.naturalWidth / footerImg.naturalHeight;
             const footerWidth = 190;
             const footerHeight = footerWidth / footerAspectRatio;
-            // Position footer 10 units from bottom
-            doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10,
-                footerWidth, footerHeight);
+            
+            // Only add the footer image to the very last page
+            const totalPages = doc.internal.getNumberOfPages();
+            doc.setPage(totalPages);
+            
+            // Check if the content goes too close to where the footer will be
+            const minFooterYPosition = doc.internal.pageSize.height - footerHeight - 10;
+            if (finalY > minFooterYPosition - 20) {
+                // If content would overlap with footer, add a new page for the footer
+                doc.addPage();
+                // Position footer 10 units from bottom on this new page
+                doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10,
+                    footerWidth, footerHeight);
+            } else {
+                // Position footer 10 units from bottom with sufficient space
+                doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10,
+                    footerWidth, footerHeight);
+            }
         }
         
         // Before saving the PDF, add the final page count
@@ -987,7 +1002,7 @@ document.addEventListener('DOMContentLoaded', function() {
             creator: 'Qurist Digital Prescription System'
         });
 
-        // Update the last page's continuation text with the final page count
+        // Update all pages with the correct total page count
         const totalPages = doc.internal.getNumberOfPages();
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
