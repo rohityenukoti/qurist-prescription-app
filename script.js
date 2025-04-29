@@ -445,6 +445,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 prescriptionData.followUp = followUpDate.toISOString().split('T')[0];
             } else if (followUpType === 'custom') {
                 prescriptionData.followUp = document.getElementById('customFollowUpDate').value || '';
+            } else {
+                // Default to 30 days if nothing is selected
+                const prescriptionDate = new Date(prescriptionData.date);
+                const followUpDate = new Date(prescriptionDate);
+                followUpDate.setDate(followUpDate.getDate() + 30);
+                prescriptionData.followUp = followUpDate.toISOString().split('T')[0];
             }
 
             // Get medications
@@ -554,6 +560,12 @@ document.addEventListener('DOMContentLoaded', function() {
             if (customDate) {
                 followUpText = `Follow up consultation on ${formatDate(customDate)}`;
             }
+        } else {
+            // Default to 30 days if nothing is selected
+            const prescriptionDate = new Date(date);
+            const followUpDate = new Date(prescriptionDate);
+            followUpDate.setDate(followUpDate.getDate() + 30);
+            followUpText = `Follow up consultation on ${formatDate(followUpDate.toISOString().split('T')[0])}`;
         }
         
         // Get medications (updated to use display names)
@@ -807,13 +819,8 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.setTextColor(0); // Set notes text to black
             doc.text(splitNotes, 20, finalY + 7);
             
-            // Add follow-up text if available
-            if (followUpText) {
-                const followUpY = finalY + 7 + (splitNotes.length * 5) + 5;
-                doc.setFont('helvetica', 'bold');
-                doc.setTextColor(2, 113, 128);
-                doc.text(followUpText, 20, followUpY);
-            }
+            // Update finalY to be after notes
+            finalY = finalY + 7 + (splitNotes.length * 5);
             
             // Add signature on the right side at the same level
             const signatureImg = document.getElementById(
@@ -823,17 +830,96 @@ document.addEventListener('DOMContentLoaded', function() {
             if (signatureImg.complete && signatureImg.naturalHeight !== 0) {
                 const signWidth = 15;
                 const signHeight = (signWidth * signatureImg.naturalHeight) / signatureImg.naturalWidth;
-                doc.addImage(signatureImg, 'PNG', 150, finalY - 5, signWidth, signHeight);
+                doc.addImage(signatureImg, 'PNG', 150, finalY - 15, signWidth, signHeight);
             }
             
             // Add seal to the right of signature
-            drawDoctorSeal(doc, 185, finalY, selectedDoctor);
+            drawDoctorSeal(doc, 185, finalY - 10, selectedDoctor);
             
-            doc.line(140, finalY + 10, 190, finalY + 10);
-            doc.text("Doctor's Signature", 165, finalY + 15, { align: 'center' });
-            
-            finalY += notesHeight;
+            doc.line(140, finalY, 190, finalY);
+            doc.text("Doctor's Signature", 165, finalY + 5, { align: 'center' });
         }
+        
+        // Add new sections for telehealth notice, validity, travel disclaimer, and disclaimer
+        // Check if we need a new page based on available space
+        const additionalSectionsHeight = 90; // Approximate height needed for all additional sections including follow-up
+        if (finalY + additionalSectionsHeight > doc.internal.pageSize.height - 20) {
+            doc.addPage();
+            finalY = 20;
+        }
+        
+        // Add follow-up section
+        finalY += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Follow-up Consultation:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+
+        // Always ensure we have follow-up text by defaulting to 30 days if nothing was selected
+        if (!followUpText) {
+            const prescriptionDate = new Date(date);
+            const followUpDate = new Date(prescriptionDate);
+            followUpDate.setDate(followUpDate.getDate() + 30);
+            followUpText = `Follow up consultation on ${formatDate(followUpDate.toISOString().split('T')[0])}`;
+        }
+
+        doc.text(followUpText.replace('Follow up consultation on ', ''), 20, finalY + 7);
+        
+        // Add telehealth consultation notice
+        finalY += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Telehealth Notice:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        doc.text('This prescription is generated on tele-consultation (no physical contact with patient).', 
+            20, finalY + 7);
+        
+        // Add prescription validity
+        finalY += 15;
+        const today = new Date();
+        const sixMonthsLater = new Date(today);
+        sixMonthsLater.setMonth(today.getMonth() + 6);
+        const validDay = sixMonthsLater.getDate().toString().padStart(2, '0');
+        const validMonth = (sixMonthsLater.getMonth() + 1).toString().padStart(2, '0');
+        const validYear = sixMonthsLater.getFullYear();
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Prescription Validity:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        doc.text(`This prescription is valid until ${validDay}/${validMonth}/${validYear}.`, 
+            20, finalY + 7);
+        
+        // Add travel disclaimer
+        finalY += 15;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Travel Advisory:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        const travelDisclaimer = 'Qurist products contain CBD (cannabidiol) and THC (tetrahydrocannabinol). Please make appropriate ' +
+            'enquiries regarding airline and local laws and regulations of the departure and destination countries, ' +
+            'including all transit points, before travelling with these products.';
+        const splitTravelDisclaimer = doc.splitTextToSize(travelDisclaimer, 170);
+        doc.text(splitTravelDisclaimer, 20, finalY + 7);
+        
+        // Update finalY after travel disclaimer
+        finalY += 7 + (splitTravelDisclaimer.length * 5);
+        
+        // Add Important Patient Agreement and Disclaimer
+        finalY += 5;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Important Patient Agreement and Disclaimer:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        doc.text('This prescription is solely for therapeutic purposes and should not be used for medico-legal purposes.', 
+            20, finalY + 7);
+        
+        finalY += 15;
         
         // Add footer image at the bottom of the last page
         const footerImg = document.getElementById('footerImage');
