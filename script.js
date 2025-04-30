@@ -257,6 +257,36 @@ function updateNotesBasedOnMedications() {
     }
 }
 
+// Add loading overlay utility functions
+function showLoadingOverlay(message = 'Processing...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const messageEl = document.getElementById('loadingMessage');
+    
+    if (messageEl) {
+        messageEl.textContent = message;
+    }
+    
+    if (overlay) {
+        overlay.classList.add('show');
+    }
+}
+
+function hideLoadingOverlay() {
+    const overlay = document.getElementById('loadingOverlay');
+    
+    if (overlay) {
+        overlay.classList.remove('show');
+    }
+}
+
+function updateLoadingMessage(message) {
+    const messageEl = document.getElementById('loadingMessage');
+    
+    if (messageEl) {
+        messageEl.textContent = message;
+    }
+}
+
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Set default date to today
@@ -410,8 +440,10 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             console.log('Save to Sheets button clicked');
             
-            // Show loading state
-            button.textContent = 'Saving...';
+            // Show loading overlay instead of just changing button text
+            showLoadingOverlay('Preparing data...');
+            
+            // Disable the button
             button.disabled = true;
 
             // Get all form data
@@ -487,14 +519,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Check if doctor is selected (required for PDF generation)
             const doctorSelect = document.getElementById('doctorSelect').value;
             if (!doctorSelect) {
+                hideLoadingOverlay();
                 alert('Please select a doctor to generate the prescription. This is required for the signature and seal.');
                 button.textContent = originalText;
                 button.disabled = false;
                 return;
             }
 
+            // Update message to show PDF generation is starting
+            updateLoadingMessage('Generating PDF document...');
+            
             // Generate the PDF and get the blob
-            button.textContent = 'Generating PDF...';
             const pdfBlob = generatePrescriptionPDF(true);
             
             if (!pdfBlob) {
@@ -506,17 +541,32 @@ document.addEventListener('DOMContentLoaded', function() {
             const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
             const fileName = `${patientName}_${formatDate(date)}.pdf`;
 
+            // Update message for Google authentication
+            updateLoadingMessage('Authenticating with Google services...');
+            
+            // Ensure we're authenticated with Google before uploading
+            if (!window.accessToken) {
+                await window.getAccessToken();
+            }
+
             // Upload the PDF to Google Drive
-            button.textContent = 'Uploading PDF...';
+            updateLoadingMessage('Uploading PDF to Google Drive...');
             const pdfUrl = await uploadPdfToDrive(pdfBlob, fileName, doctorSelect);
             
             // Save data to Google Sheets with the PDF URL
-            button.textContent = 'Saving to Sheets...';
+            updateLoadingMessage('Saving prescription data to Google Sheets...');
             await savePrescriptionToSheet(prescriptionData, pdfUrl);
             
-            alert('Prescription data and PDF saved successfully! PDF is available at:\n' + pdfUrl);
+            // Final confirmation message
+            updateLoadingMessage('Finalizing...');
+            setTimeout(() => {
+                // Hide the loading overlay after a short delay to ensure the user sees the success message
+                hideLoadingOverlay();
+                alert('Prescription data and PDF saved successfully! PDF is available at:\n' + pdfUrl);
+            }, 500);
         } catch (error) {
             console.error('Error in save to sheets handler:', error);
+            hideLoadingOverlay();
             alert('Error saving data: ' + error.message);
         } finally {
             // Reset button state

@@ -15,6 +15,13 @@ const DRIVE_FOLDER_IDS = {
 let tokenClient;
 let accessToken = null;
 
+// Helper function to hide loading spinner during API errors
+function hideLoadingOnError() {
+    if (typeof hideLoadingOverlay === 'function') {
+        hideLoadingOverlay();
+    }
+}
+
 // Initialize the Google Identity Services and Sheets API
 async function initGoogleAPI() {
     return new Promise((resolve, reject) => {
@@ -41,12 +48,14 @@ async function initGoogleAPI() {
 
             script.onerror = (error) => {
                 console.error('Error loading Google Identity Services:', error);
+                hideLoadingOnError();
                 reject(error);
             };
             
             document.head.appendChild(script);
         } catch (error) {
             console.error('Error in initGoogleAPI:', error);
+            hideLoadingOnError();
             reject(error);
         }
     });
@@ -67,6 +76,7 @@ function initializeTokenClient(resolve, reject) {
             },
             error_callback: (error) => {
                 console.error('Token client error:', error);
+                hideLoadingOnError();
                 reject(error);
             }
         });
@@ -77,10 +87,12 @@ function initializeTokenClient(resolve, reject) {
             resolve();
         }).catch(error => {
             console.error('Error loading Google APIs:', error);
+            hideLoadingOnError();
             reject(error);
         });
     } catch (error) {
         console.error('Error initializing token client:', error);
+        hideLoadingOnError();
         reject(error);
     }
 }
@@ -106,12 +118,14 @@ async function loadGoogleAPIs() {
                     });
                     resolve();
                 } catch (error) {
+                    hideLoadingOnError();
                     reject(error);
                 }
             });
         };
 
         script.onerror = (error) => {
+            hideLoadingOnError();
             reject(error);
         };
     });
@@ -134,6 +148,7 @@ async function getAccessToken() {
                         accessToken = response.access_token;
                         resolve(accessToken);
                     } else {
+                        hideLoadingOnError();
                         reject(new Error('Failed to get access token'));
                     }
                 };
@@ -146,6 +161,7 @@ async function getAccessToken() {
             }
         } catch (error) {
             console.error('Error in getAccessToken:', error);
+            hideLoadingOnError();
             reject(error);
         }
     });
@@ -231,6 +247,7 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
         return fileData.webViewLink;
     } catch (error) {
         console.error('Error uploading PDF to Drive:', error);
+        hideLoadingOnError();
         throw error;
     }
 }
@@ -300,6 +317,7 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '') {
         return result;
     } catch (error) {
         console.error('Error saving to Google Sheets:', error);
+        hideLoadingOnError();
         // Re-throw the error to be handled by the calling code
         throw error;
     }
