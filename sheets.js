@@ -1,9 +1,12 @@
-// Google Sheets Integration
+// Google Sheets and Drive Integration
 
-// Your Google Sheets API credentials
+// Your Google API credentials
 const SPREADSHEET_ID = '1X0cIuwzusx1PNNHcyFeLunnZ9Y7x-d9BCdT0PAhQ_PU';
 const API_KEY = 'AIzaSyCpijuiQAj27q6FIVQF9AMv7aiGL8R2iiI';
 const CLIENT_ID = '135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleusercontent.com';
+// ID of a folder in your Google Drive where PDFs will be stored
+const DRIVE_FOLDER_ID = '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P'; // Replace with your actual folder ID
+
 
 let tokenClient;
 let accessToken = null;
@@ -47,9 +50,10 @@ async function initGoogleAPI() {
 
 function initializeTokenClient(resolve, reject) {
     try {
+        // Updated scope to include drive.file access
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/spreadsheets',
+            scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
             callback: (tokenResponse) => {
                 if (tokenResponse && tokenResponse.access_token) {
                     console.log('Access token received in initialization');
@@ -63,12 +67,12 @@ function initializeTokenClient(resolve, reject) {
             }
         });
         
-        // Load the Google Sheets API
-        loadSheetsAPI().then(() => {
-            console.log('Google Sheets API loaded successfully');
+        // Load the Google APIs
+        loadGoogleAPIs().then(() => {
+            console.log('Google APIs loaded successfully');
             resolve();
         }).catch(error => {
-            console.error('Error loading Sheets API:', error);
+            console.error('Error loading Google APIs:', error);
             reject(error);
         });
     } catch (error) {
@@ -77,8 +81,8 @@ function initializeTokenClient(resolve, reject) {
     }
 }
 
-// Load the Google Sheets API
-async function loadSheetsAPI() {
+// Load the Google APIs (Sheets and Drive)
+async function loadGoogleAPIs() {
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
         script.src = 'https://apis.google.com/js/api.js';
@@ -91,7 +95,10 @@ async function loadSheetsAPI() {
                 try {
                     await gapi.client.init({
                         apiKey: API_KEY,
-                        discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+                        discoveryDocs: [
+                            'https://sheets.googleapis.com/$discovery/rest?version=v4',
+                            'https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'
+                        ]
                     });
                     resolve();
                 } catch (error) {
@@ -140,8 +147,89 @@ async function getAccessToken() {
     });
 }
 
-// Save prescription data to Google Sheets
-async function savePrescriptionToSheet(prescriptionData) {
+// Upload a PDF to Google Drive
+async function uploadPdfToDrive(pdfBlob, fileName) {
+    try {
+        console.log('Uploading PDF to Google Drive...');
+        
+        // Ensure we have an access token
+        if (!accessToken) {
+            console.log('No access token found, requesting one...');
+            await getAccessToken();
+        }
+        
+        if (!accessToken) {
+            throw new Error('Failed to obtain access token for Drive upload');
+        }
+
+        // Create form data for the file upload
+        const formData = new FormData();
+        formData.append('metadata', new Blob([JSON.stringify({
+            name: fileName,
+            mimeType: 'application/pdf',
+            parents: [DRIVE_FOLDER_ID]
+        })], { type: 'application/json' }));
+        formData.append('file', pdfBlob);
+
+        // Upload the file to Drive
+        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to upload file: ${response.status} ${errorText}`);
+        }
+
+        const result = await response.json();
+        console.log('File uploaded successfully. File ID:', result.id);
+        
+        // Make the file publicly accessible
+        const shareResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}/permissions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                role: 'reader',
+                type: 'anyone'
+            })
+        });
+
+        if (!shareResponse.ok) {
+            const errorText = await shareResponse.text();
+            throw new Error(`Failed to share file: ${shareResponse.status} ${errorText}`);
+        }
+
+        // Get the file's web view URL
+        const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}?fields=webViewLink`, {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (!fileResponse.ok) {
+            const errorText = await fileResponse.text();
+            throw new Error(`Failed to get file URL: ${fileResponse.status} ${errorText}`);
+        }
+
+        const fileData = await fileResponse.json();
+        console.log('File shared successfully. URL:', fileData.webViewLink);
+        
+        return fileData.webViewLink;
+    } catch (error) {
+        console.error('Error uploading PDF to Drive:', error);
+        throw error;
+    }
+}
+
+// Save prescription data to Google Sheets, including PDF URL
+async function savePrescriptionToSheet(prescriptionData, pdfUrl = '') {
     try {
         console.log('Starting save to Google Sheets...');
         
@@ -161,7 +249,7 @@ async function savePrescriptionToSheet(prescriptionData) {
         sixMonthsLater.setMonth(today.getMonth() + 6);
         const validityDate = sixMonthsLater.toISOString().split('T')[0];
 
-        // Format the data for Google Sheets
+        // Format the data for Google Sheets, now including PDF URL
         const values = [
             [
                 prescriptionData.date,
@@ -180,15 +268,16 @@ async function savePrescriptionToSheet(prescriptionData) {
                 JSON.stringify(prescriptionData.medications),
                 prescriptionData.notes,
                 prescriptionData.followUp || '',
-                validityDate
+                validityDate,
+                pdfUrl || '' // Add the PDF URL as a new column
             ]
         ];
 
         console.log('Formatted data:', values);
         console.log('Attempting to save data to Google Sheets...');
 
-        // Append the data to the sheet using fetch API
-        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!A:Q:append?valueInputOption=RAW`, {
+        // Append the data to the sheet using fetch API (expanded to include the PDF URL column)
+        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!A:R:append?valueInputOption=RAW`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -229,4 +318,5 @@ function revokeAccess() {
 // Export functions
 window.initGoogleAPI = initGoogleAPI;
 window.savePrescriptionToSheet = savePrescriptionToSheet;
+window.uploadPdfToDrive = uploadPdfToDrive;
 window.revokeAccess = revokeAccess; 

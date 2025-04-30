@@ -484,13 +484,40 @@ document.addEventListener('DOMContentLoaded', function() {
                 throw new Error('Google API initialization function not found. Make sure sheets.js is loaded properly.');
             }
 
-            // Wait for the entire save process to complete
-            await savePrescriptionToSheet(prescriptionData);
+            // Check if doctor is selected (required for PDF generation)
+            const doctorSelect = document.getElementById('doctorSelect').value;
+            if (!doctorSelect) {
+                alert('Please select a doctor to generate the prescription. This is required for the signature and seal.');
+                button.textContent = originalText;
+                button.disabled = false;
+                return;
+            }
+
+            // Generate the PDF and get the blob
+            button.textContent = 'Generating PDF...';
+            const pdfBlob = generatePrescriptionPDF(true);
             
-            alert('Prescription data saved to Google Sheets successfully!');
+            if (!pdfBlob) {
+                throw new Error('Failed to generate PDF');
+            }
+
+            // Generate filename for the PDF
+            const patientName = document.getElementById('patientName').value;
+            const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
+            const fileName = `${patientName}_${formatDate(date)}.pdf`;
+
+            // Upload the PDF to Google Drive
+            button.textContent = 'Uploading PDF...';
+            const pdfUrl = await uploadPdfToDrive(pdfBlob, fileName);
+            
+            // Save data to Google Sheets with the PDF URL
+            button.textContent = 'Saving to Sheets...';
+            await savePrescriptionToSheet(prescriptionData, pdfUrl);
+            
+            alert('Prescription data and PDF saved successfully! PDF is available at:\n' + pdfUrl);
         } catch (error) {
             console.error('Error in save to sheets handler:', error);
-            alert('Error saving to Google Sheets: ' + error.message);
+            alert('Error saving data: ' + error.message);
         } finally {
             // Reset button state
             button.textContent = originalText;
@@ -499,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Function to generate the prescription PDF
-    function generatePrescriptionPDF() {
+    function generatePrescriptionPDF(returnBlob = false) {
         // Add medication name mapping
         const medicationDisplayNames = {
             'CBD mild': 'Qurist Wide Spectrum Mild Potency Oil',
@@ -1036,8 +1063,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Save the PDF
-        doc.save(`${patientName}_${formatDate(date)}.pdf`);
+        // Save or return the PDF based on the returnBlob parameter
+        if (returnBlob) {
+            return doc.output('blob');
+        } else {
+            // Save the PDF as download
+            doc.save(`${patientName}_${formatDate(date)}.pdf`);
+            return null;
+        }
     }
     
     // Helper function to format date
