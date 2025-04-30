@@ -4,8 +4,12 @@
 const SPREADSHEET_ID = '1X0cIuwzusx1PNNHcyFeLunnZ9Y7x-d9BCdT0PAhQ_PU';
 const API_KEY = 'AIzaSyCpijuiQAj27q6FIVQF9AMv7aiGL8R2iiI';
 const CLIENT_ID = '135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleusercontent.com';
-// ID of a folder in your Google Drive where PDFs will be stored
-const DRIVE_FOLDER_ID = '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P'; // Replace with your actual folder ID
+// IDs of folders in Google Drive where PDFs will be stored, by doctor
+const DRIVE_FOLDER_IDS = { 
+    dr_rohit: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P',
+    dr_rachna: '1Kv8U6FbGX4equiElhVB5ydZpgcXGZeFM'
+};
+
 
 
 let tokenClient;
@@ -148,7 +152,7 @@ async function getAccessToken() {
 }
 
 // Upload a PDF to Google Drive
-async function uploadPdfToDrive(pdfBlob, fileName) {
+async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
     try {
         console.log('Uploading PDF to Google Drive...');
         
@@ -162,12 +166,15 @@ async function uploadPdfToDrive(pdfBlob, fileName) {
             throw new Error('Failed to obtain access token for Drive upload');
         }
 
+        // Get the correct folder ID based on the doctor
+        const folderId = DRIVE_FOLDER_IDS[doctorId] || DRIVE_FOLDER_IDS.dr_rohit;
+
         // Create form data for the file upload
         const formData = new FormData();
         formData.append('metadata', new Blob([JSON.stringify({
             name: fileName,
             mimeType: 'application/pdf',
-            parents: [DRIVE_FOLDER_ID]
+            parents: [folderId]
         })], { type: 'application/json' }));
         formData.append('file', pdfBlob);
 

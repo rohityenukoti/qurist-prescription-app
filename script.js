@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Upload the PDF to Google Drive
             button.textContent = 'Uploading PDF...';
-            const pdfUrl = await uploadPdfToDrive(pdfBlob, fileName);
+            const pdfUrl = await uploadPdfToDrive(pdfBlob, fileName, doctorSelect);
             
             // Save data to Google Sheets with the PDF URL
             button.textContent = 'Saving to Sheets...';
