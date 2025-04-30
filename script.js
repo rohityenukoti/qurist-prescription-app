@@ -76,10 +76,10 @@ function updateInstructionOptions(medicationSelect) {
     // Add appropriate instruction options based on medication type
     const instructions = selectedMed.includes('CBD') || selectedMed.includes('THC') 
         ? [
-            'Orally -- 30 minutes before bedtime -- After Dinner',
-            'Orally -- After Breakfast',
-            'Orally -- After Lunch',
-            'Orally -- As and When Required (SOS)',
+            'Sublingually -- 30 minutes before bedtime -- After Dinner',
+            'Sublingually -- After Breakfast',
+            'Sublingually -- After Lunch',
+            'Sublingually -- As and When Required (SOS)',
             'External Application -- As and When Required (SOS)'
         ]
         : [
@@ -878,7 +878,7 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.text("Doctor's Signature", 165, finalY + 5, { align: 'center' });
         }
         
-        // Add new sections for telehealth notice, validity, travel disclaimer, and disclaimer
+        // Add new sections for telehealth notice, travel disclaimer, and disclaimer
         // Check if we need a new page based on available space
         const additionalSectionsHeight = 105; // Approximate height needed for all additional sections including follow-up and contact information
         if (finalY + additionalSectionsHeight > doc.internal.pageSize.height - 20) {
@@ -912,23 +912,6 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
         doc.text('This prescription is generated on tele-consultation (no physical contact with patient).', 
-            20, finalY + 7);
-        
-        // Add prescription validity
-        finalY += 15;
-        const today = new Date();
-        const sixMonthsLater = new Date(today);
-        sixMonthsLater.setMonth(today.getMonth() + 6);
-        const validDay = sixMonthsLater.getDate().toString().padStart(2, '0');
-        const validMonth = (sixMonthsLater.getMonth() + 1).toString().padStart(2, '0');
-        const validYear = sixMonthsLater.getFullYear();
-        
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(2, 113, 128);
-        doc.text('Prescription Validity:', 20, finalY);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0);
-        doc.text(`This prescription is valid until ${validDay}/${validMonth}/${validYear}.`, 
             20, finalY + 7);
         
         // Add travel disclaimer

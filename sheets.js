@@ -243,12 +243,6 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '') {
             throw new Error('Failed to obtain access token');
         }
 
-        // Calculate prescription validity date (6 months from current date)
-        const today = new Date();
-        const sixMonthsLater = new Date(today);
-        sixMonthsLater.setMonth(today.getMonth() + 6);
-        const validityDate = sixMonthsLater.toISOString().split('T')[0];
-
         // Format the data for Google Sheets, now including PDF URL
         const values = [
             [
@@ -268,7 +262,6 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '') {
                 JSON.stringify(prescriptionData.medications),
                 prescriptionData.notes,
                 prescriptionData.followUp || '',
-                validityDate,
                 pdfUrl || '' // Add the PDF URL as a new column
             ]
         ];
@@ -277,7 +270,7 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '') {
         console.log('Attempting to save data to Google Sheets...');
 
         // Append the data to the sheet using fetch API (expanded to include the PDF URL column)
-        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!A:R:append?valueInputOption=RAW`, {
+        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!A:Q:append?valueInputOption=RAW`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
