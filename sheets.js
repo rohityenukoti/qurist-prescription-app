@@ -175,6 +175,7 @@ async function savePrescriptionToSheet(prescriptionData) {
                 prescriptionData.complaints,
                 prescriptionData.comorbidities,
                 prescriptionData.ongoingMedications,
+                prescriptionData.previousCannabis || '',
                 prescriptionData.diagnosis || '',
                 JSON.stringify(prescriptionData.medications),
                 prescriptionData.notes,
@@ -187,7 +188,7 @@ async function savePrescriptionToSheet(prescriptionData) {
         console.log('Attempting to save data to Google Sheets...');
 
         // Append the data to the sheet using fetch API
-        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!A:P:append?valueInputOption=RAW`, {
+        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!A:Q:append?valueInputOption=RAW`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,

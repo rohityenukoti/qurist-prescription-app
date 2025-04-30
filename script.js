@@ -195,6 +195,7 @@ function resetForm() {
     });
     document.getElementById('comorbidities').value = '';
     document.getElementById('ongoingMedications').value = '';
+    document.getElementById('previousCannabis').value = '';
     document.getElementById('diagnosis').value = '';
     
     // Reset follow-up
@@ -428,6 +429,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 complaints: document.getElementById('complaints').value,
                 comorbidities: document.getElementById('comorbidities').value || 'None',
                 ongoingMedications: document.getElementById('ongoingMedications').value || 'None',
+                previousCannabis: document.getElementById('previousCannabis').value,
                 diagnosis: document.getElementById('diagnosis').value || 'None',
                 medications: [],
                 notes: document.getElementById('notes').value,
@@ -541,6 +543,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const complaints = document.getElementById('complaints').value;
         const comorbidities = document.getElementById('comorbidities').value || 'None';
         const ongoingMedications = document.getElementById('ongoingMedications').value || 'None';
+        const previousCannabis = document.getElementById('previousCannabis').value;
         const diagnosis = document.getElementById('diagnosis').value || 'None';
         const notes = document.getElementById('notes').value;
         const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
@@ -731,6 +734,15 @@ document.addEventListener('DOMContentLoaded', function() {
             
             currentY = doc.lastAutoTable.finalY + 10;
         }
+        
+        // Add Previous Cannabis Use section
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Previous Medical Cannabis Use:', 20, currentY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0); // Set to black
+        doc.text(previousCannabis || '', 140, currentY);
+        currentY += 10;
         
         // Add Diagnosis section
         if (diagnosis) {
