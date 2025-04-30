@@ -921,9 +921,10 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Travel Advisory:', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        const travelDisclaimer = 'Qurist products contain CBD (cannabidiol) and THC (tetrahydrocannabinol). Please make appropriate ' +
+        const travelDisclaimer = 'For domestic travel within India: Please carry this prescription with you when traveling with Qurist products. ' +
+            'For international travel: Qurist products contain CBD (cannabidiol) and THC (tetrahydrocannabinol). Please make appropriate ' +
             'enquiries regarding airline and local laws and regulations of the departure and destination countries, ' +
-            'including all transit points, before travelling with these products.';
+            'including all transit points, before traveling with these products internationally.';
         const splitTravelDisclaimer = doc.splitTextToSize(travelDisclaimer, 170);
         doc.text(splitTravelDisclaimer, 20, finalY + 7);
         
