@@ -562,7 +562,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 // Hide the loading overlay after a short delay to ensure the user sees the success message
                 hideLoadingOverlay();
-                alert('Prescription data and PDF saved successfully! PDF is available at:\n' + pdfUrl);
+                alert('Prescription data and PDF saved successfully!');
             }, 500);
         } catch (error) {
             console.error('Error in save to sheets handler:', error);
