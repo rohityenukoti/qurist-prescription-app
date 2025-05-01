@@ -991,6 +991,9 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('This prescription is solely for therapeutic purposes and should not be used for medico-legal purposes.', 
             20, finalY + 7);
         
+        // Update finalY after disclaimer before adding contact information
+        finalY += 15;
+        
         // Add Contact Information section
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
