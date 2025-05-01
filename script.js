@@ -676,7 +676,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Create PDF using jsPDF
         const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
+        const doc = new jsPDF({
+            compress: true // Add compression to reduce file size
+        });
         
         // Add header image
         const headerImg = document.getElementById('headerImage');
