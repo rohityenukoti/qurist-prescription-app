@@ -684,9 +684,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const headerImg = document.getElementById('headerImage');
         if (headerImg.complete && headerImg.naturalHeight !== 0) {
             const headerAspectRatio = headerImg.naturalWidth / headerImg.naturalHeight;
-            const headerWidth = 190;
+            const headerWidth = 40; // Smaller width for logo
             const headerHeight = headerWidth / headerAspectRatio;
-            doc.addImage(headerImg, 'PNG', 10, 10, headerWidth, headerHeight);
+            doc.addImage(headerImg, 'PNG', 20, 10, headerWidth, headerHeight);
             const startY = headerHeight + 20;
         }
         
@@ -695,7 +695,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
         
-        // First group: Order ID
+        // First group: Order ID - moved to right side to give space for logo
         doc.text(`Order ID:`, 140, 25);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0); // Set to black
@@ -875,7 +875,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const headerImg = document.getElementById('headerImage');
                 if (headerImg.complete && headerImg.naturalHeight !== 0) {
                     const headerAspectRatio = headerImg.naturalWidth / headerImg.naturalHeight;
-                    const headerWidth = 190;
+                    const headerWidth = 60; // Smaller width for logo
                     const headerHeight = headerWidth / headerAspectRatio;
                     doc.addImage(headerImg, 'PNG', 10, 10, headerWidth, headerHeight);
                 }
