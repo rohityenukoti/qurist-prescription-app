@@ -143,7 +143,8 @@ function getDefaultNotes(gender = '', medications = []) {
         "• Store securely away from children.",
         "• Inform your treating physician about using CBD for your medical condition.",
         "• Follow sleep hygiene measures as discussed.",
-        "• Maintain age-appropriate healthy nutrition and physical activity as discussed for your medical condition."
+        "• Maintain age-appropriate healthy nutrition and physical activity as discussed for your medical condition.",
+        "• Limit yourself to only one type of CBD product within a 24-hour period."
     ];
     
     // Add pregnancy note only for female patients
