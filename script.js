@@ -1,3 +1,125 @@
+// Authentication variables
+let currentUser = null;
+const ALLOWED_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in'];
+
+// Handle Google Sign-In response
+function handleCredentialResponse(response) {
+    // Decode the credential response
+    const credential = parseJwt(response.credential);
+    console.log("Decoded credential:", credential);
+    
+    const email = credential.email;
+    
+    if (ALLOWED_EMAILS.includes(email)) {
+        // Valid doctor email
+        console.log("Valid doctor login:", email);
+        currentUser = {
+            email: email,
+            name: credential.name,
+            picture: credential.picture
+        };
+        
+        // Set the doctor select based on the email
+        if (email === 'rohit@qurist.in') {
+            document.getElementById('doctorSelect').value = 'dr_rohit';
+            document.getElementById('doctorSelect').disabled = true;
+        } else if (email === 'rachna@qurist.in') {
+            document.getElementById('doctorSelect').value = 'dr_rachna';
+            document.getElementById('doctorSelect').disabled = true;
+        }
+        
+        // Display login success and show app
+        document.getElementById('loginMessage').textContent = 'Login successful!';
+        document.getElementById('loginMessage').className = 'login-message success';
+        
+        // Set user email in the header
+        document.getElementById('userEmail').textContent = email;
+        
+        // Hide login overlay and show app after a short delay
+        setTimeout(() => {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('appContainer').style.display = 'block';
+        }, 1000);
+    } else {
+        // Invalid doctor email
+        console.log("Invalid doctor login attempt:", email);
+        document.getElementById('loginMessage').textContent = 'Access denied. Only authorized doctors can use this application.';
+        document.getElementById('loginMessage').className = 'login-message error';
+        currentUser = null;
+        
+        // Retry Google Sign In
+        google.accounts.id.prompt();
+    }
+}
+
+// Function to parse JWT token
+function parseJwt(token) {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+    }).join(''));
+
+    return JSON.parse(jsonPayload);
+}
+
+// Logout function
+function logout() {
+    // Clear user data
+    currentUser = null;
+    
+    // Reset the doctor select
+    document.getElementById('doctorSelect').value = '';
+    document.getElementById('doctorSelect').disabled = false;
+    
+    // Show login overlay and hide app
+    document.getElementById('loginOverlay').style.display = 'flex';
+    document.getElementById('appContainer').style.display = 'none';
+    
+    // Reset login message
+    document.getElementById('loginMessage').textContent = '';
+    document.getElementById('loginMessage').className = 'login-message';
+    
+    // Clear form if needed
+    resetForm();
+    
+    // Sign out from Google
+    google.accounts.id.disableAutoSelect();
+}
+
+// Function to initialize Google Identity Services API
+function initializeGoogleAuth() {
+    // IMPORTANT: Replace with your actual Google OAuth client ID
+    // Get it from Google Cloud Console: https://console.cloud.google.com/
+    // 1. Create a new project (or use existing)
+    // 2. Configure the OAuth consent screen (External type is fine for testing)
+    // 3. Add rohit@qurist.in and rachna@qurist.in as test users
+    // 4. Create OAuth client ID (Web application type)
+    // 5. Add your app's URL to the Authorized JavaScript origins
+    const CLIENT_ID = "135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleusercontent.com";
+    
+    google.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredentialResponse
+    });
+    
+    // Display the Sign In button
+    google.accounts.id.renderButton(
+        document.querySelector(".g_id_signin"),
+        { 
+            theme: "outline", 
+            size: "large",
+            type: "standard",
+            shape: "rectangular",
+            text: "signin_with",
+            logo_alignment: "center"
+        }
+    );
+    
+    // Prompt One Tap UI
+    google.accounts.id.prompt();
+}
+
 // Function to update dosage options - move this OUTSIDE the DOMContentLoaded listener
 function updateDosageOptions(medicationSelect) {
     const dosageSelect = medicationSelect.parentElement.parentElement.querySelector('.medication-dosage');
@@ -290,6 +412,26 @@ function updateLoadingMessage(message) {
 
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Google authentication
+    window.onload = function() {
+        initializeGoogleAuth();
+    };
+    
+    // Add event listener for logout button
+    document.getElementById('logoutBtn').addEventListener('click', function() {
+        logout();
+    });
+    
+    // Check authentication before allowing certain actions
+    const checkAuth = function(event, action) {
+        if (!currentUser) {
+            event.preventDefault();
+            alert('You must be logged in to perform this action.');
+            return false;
+        }
+        return true;
+    };
+    
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
@@ -424,7 +566,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Add event listener to the "Generate Prescription" button
-    document.getElementById('generatePdfBtn').addEventListener('click', function() {
+    document.getElementById('generatePdfBtn').addEventListener('click', function(event) {
+        // Check if user is authenticated
+        if (!currentUser) {
+            alert('You must be logged in as an authorized doctor to generate prescriptions.');
+            return;
+        }
+        
         const doctorSelect = document.getElementById('doctorSelect').value;
         if (!doctorSelect) {
             alert('Please select a doctor to generate the prescription. This is required for the signature and seal.');
@@ -434,7 +582,13 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Add event listener for Save to Google Sheets button
-    document.getElementById('saveToSheetsBtn').addEventListener('click', async function() {
+    document.getElementById('saveToSheetsBtn').addEventListener('click', async function(event) {
+        // Check if user is authenticated
+        if (!currentUser) {
+            alert('You must be logged in as an authorized doctor to save prescriptions to Google Sheets.');
+            return;
+        }
+        
         const button = this;
         const originalText = button.textContent;
         
@@ -578,6 +732,12 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Function to generate the prescription PDF
     function generatePrescriptionPDF(returnBlob = false) {
+        // Check authentication status
+        if (!currentUser) {
+            alert('You must be logged in as an authorized doctor to generate prescriptions.');
+            return null;
+        }
+        
         // Add medication name mapping
         const medicationDisplayNames = {
             'CBD mild': 'Qurist Wide Spectrum Mild Potency Oil',
@@ -591,7 +751,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'Sleepeasy Gummies': 'Qurist Sleepeasy Gummies'
         };
 
-        // Get form data
+        // Get form data - automatically use authenticated doctor
         const doctorSelect = document.getElementById('doctorSelect').value;
         
         // Define doctor information based on selection

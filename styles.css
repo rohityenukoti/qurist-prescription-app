@@ -13,6 +13,90 @@ body {
     position: relative;
 }
 
+/* Login Overlay Styles */
+.login-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.login-container {
+    background-color: white;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+.login-logo {
+    width: 120px;
+    margin-bottom: 20px;
+}
+
+.login-container h2 {
+    color: #3498db;
+    margin-bottom: 15px;
+    border-bottom: none;
+}
+
+.login-container p {
+    margin-bottom: 20px;
+    color: #666;
+}
+
+.login-message {
+    margin-top: 20px;
+    padding: 10px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.login-message.error {
+    background-color: #ffecec;
+    color: #e74c3c;
+    border: 1px solid #f5c6cb;
+}
+
+.login-message.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.user-info {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#userEmail {
+    margin-right: 15px;
+    font-weight: bold;
+    color: #3498db;
+}
+
+#logoutBtn {
+    background-color: #e74c3c;
+    color: white;
+    padding: 5px 10px;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+#logoutBtn:hover {
+    background-color: #c0392b;
+}
+
 /* Add a pseudo-element for the background pattern with opacity */
 body::before {
     content: "";

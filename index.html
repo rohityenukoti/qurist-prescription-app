@@ -8,9 +8,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="sheets.js"></script>
 </head>
 <body>
+    <!-- Login overlay -->
+    <div id="loginOverlay" class="login-overlay">
+        <div class="login-container">
+            <img src="logo.png" alt="Qurist Logo" class="login-logo">
+            <h2>Doctor Login</h2>
+            <p>Please sign in with your Qurist doctor account to continue</p>
+            <!-- IMPORTANT: You need to replace YOUR_GOOGLE_CLIENT_ID with an actual OAuth 2.0 Client ID -->
+            <!-- Get it from Google Cloud Console: https://console.cloud.google.com/ -->
+            <!-- Make sure to configure the OAuth consent screen and add both doctor emails as test users -->
+            <div id="g_id_onload"
+                 data-client_id="YOUR_GOOGLE_CLIENT_ID"
+                 data-callback="handleCredentialResponse">
+            </div>
+            <div class="g_id_signin" data-type="standard"></div>
+            <div id="loginMessage" class="login-message"></div>
+        </div>
+    </div>
+
     <!-- Add these hidden images right after the body tag -->
     <img id="headerImage" src="logo.png" style="display: none;">
     <img id="footerImage" src="footer.png" style="display: none;">
@@ -31,7 +50,11 @@
         </div>
     </div>
     
-    <div class="container">
+    <div id="appContainer" class="container" style="display: none;">
+        <div class="user-info">
+            <span id="userEmail"></span>
+            <button id="logoutBtn">Logout</button>
+        </div>
         <h1>Qurist Digital Prescription</h1>
         
         <form id="prescriptionForm">
