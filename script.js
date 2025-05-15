@@ -8,9 +8,16 @@ function handleCredentialResponse(response) {
     const credential = parseJwt(response.credential);
     console.log("Decoded credential:", credential);
     
-    const email = credential.email;
+    // Convert to lowercase for case-insensitive comparison
+    const email = credential.email.toLowerCase();
     
-    if (ALLOWED_EMAILS.includes(email)) {
+    // Check if email is in the allowed list (case-insensitive)
+    const isAllowed = ALLOWED_EMAILS.some(
+        allowed => allowed.toLowerCase() === email || 
+        email.includes(allowed.split('@')[0].toLowerCase())
+    );
+    
+    if (isAllowed) {
         // Valid doctor email
         console.log("Valid doctor login:", email);
         currentUser = {
@@ -19,11 +26,11 @@ function handleCredentialResponse(response) {
             picture: credential.picture
         };
         
-        // Set the doctor select based on the email
-        if (email === 'rohit@qurist.in') {
+        // Set the doctor select based on the email (case-insensitive)
+        if (email.includes('rohit')) {
             document.getElementById('doctorSelect').value = 'dr_rohit';
             document.getElementById('doctorSelect').disabled = true;
-        } else if (email === 'rachna@qurist.in') {
+        } else if (email.includes('rachna')) {
             document.getElementById('doctorSelect').value = 'dr_rachna';
             document.getElementById('doctorSelect').disabled = true;
         }
