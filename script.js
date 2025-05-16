@@ -1407,12 +1407,18 @@ function addCustomFooterInfo(doc, y) {
 
 // Function to convert height from feet to centimeters
 function convertFeetToCm(feetStr) {
-    // Format should be like "5.11" for 5 feet 11 inches
-    if (!feetStr || !feetStr.includes('.')) {
+    // Check if input is empty
+    if (!feetStr) {
         return null;
     }
     
     try {
+        // If it's just a number without decimal (e.g., "5"), treat it as feet with 0 inches
+        if (!feetStr.includes('.')) {
+            const feet = parseFloat(feetStr);
+            return Math.round(feet * 30.48); // Convert just feet to cm
+        }
+        
         const parts = feetStr.split('.');
         const feet = parseFloat(parts[0]);
         let inches = parts[1] ? parseFloat(parts[1]) : 0;
@@ -1451,7 +1457,7 @@ function setupHeightConverter() {
             if (cmValue) {
                 heightConverted.textContent = `= ${cmValue} cm`;
             } else {
-                heightConverted.textContent = 'Enter in format: feet.inches (e.g., 5.11 for 5\'11")';
+                heightConverted.textContent = 'Enter feet.inches (e.g., 5.11 for 5feet 11inches)';
             }
         } else {
             heightConverted.textContent = '';
