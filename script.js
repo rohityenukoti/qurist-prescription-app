@@ -315,8 +315,8 @@ function resetForm() {
     document.getElementById('patientAge').value = '';
     document.getElementById('patientGender').value = '';
     document.getElementById('patientHeight').value = '';
-    document.getElementById('heightUnit').value = 'cm';
-    document.getElementById('heightConverted').textContent = '';
+    document.getElementById('heightUnit').value = 'ft';
+    document.getElementById('heightConverted').textContent = 'Enter in format: feet.inches (e.g., 5.11 for 5feet 11inches)';
     document.getElementById('patientWeight').value = '';
     
     // Reset medical information
@@ -1447,18 +1447,8 @@ function setupHeightConverter() {
         const value = heightInput.value.trim();
         const unit = heightUnit.value;
         
-        if (!value) {
-            heightConverted.textContent = '';
-            return;
-        }
-        
         if (unit === 'ft') {
-            const cmValue = convertFeetToCm(value);
-            if (cmValue) {
-                heightConverted.textContent = `= ${cmValue} cm`;
-            } else {
-                heightConverted.textContent = 'Enter feet.inches (e.g., 5.11 for 5feet 11inches)';
-            }
+            heightConverted.textContent = 'Enter in format: feet.inches (e.g., 5.11 for 5feet 11inches)';
         } else {
             heightConverted.textContent = '';
         }
@@ -1467,6 +1457,9 @@ function setupHeightConverter() {
     // Add event listeners
     heightInput.addEventListener('input', updateHeightConversion);
     heightUnit.addEventListener('change', updateHeightConversion);
+    
+    // Initialize help text based on default selection
+    updateHeightConversion();
 }
 
 // Function to get the height value in cm regardless of input unit
