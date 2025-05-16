@@ -98,7 +98,14 @@
                 </div>
                 <div class="form-group">
                     <label for="patientHeight">Height:</label>
-                    <input type="text" id="patientHeight" placeholder="cm">
+                    <div class="height-input-group">
+                        <input type="text" id="patientHeight" placeholder="Enter height">
+                        <select id="heightUnit">
+                            <option value="cm">cm</option>
+                            <option value="ft">ft</option>
+                        </select>
+                    </div>
+                    <span id="heightConverted" class="converted-value"></span>
                 </div>
                 <div class="form-group">
                     <label for="patientWeight">Weight:</label>

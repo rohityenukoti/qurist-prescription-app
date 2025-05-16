@@ -315,6 +315,8 @@ function resetForm() {
     document.getElementById('patientAge').value = '';
     document.getElementById('patientGender').value = '';
     document.getElementById('patientHeight').value = '';
+    document.getElementById('heightUnit').value = 'cm';
+    document.getElementById('heightConverted').textContent = '';
     document.getElementById('patientWeight').value = '';
     
     // Reset medical information
@@ -423,6 +425,9 @@ document.addEventListener('DOMContentLoaded', function() {
     window.onload = function() {
         initializeGoogleAuth();
     };
+    
+    // Initialize height converter
+    setupHeightConverter();
     
     // Add event listener for logout button
     document.getElementById('logoutBtn').addEventListener('click', function() {
@@ -618,7 +623,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 patientName: document.getElementById('patientName').value,
                 patientAge: document.getElementById('patientAge').value,
                 patientGender: document.getElementById('patientGender').value,
-                patientHeight: document.getElementById('patientHeight').value,
+                patientHeight: getHeightInCm(),
                 patientWeight: document.getElementById('patientWeight').value,
                 complaints: document.getElementById('complaints').value,
                 comorbidities: document.getElementById('comorbidities').value || 'None',
@@ -782,7 +787,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const patientName = document.getElementById('patientName').value;
         const patientAge = document.getElementById('patientAge').value;
         const patientGender = document.getElementById('patientGender').value;
-        const patientHeight = document.getElementById('patientHeight').value;
+        const patientHeight = getHeightInCm();
         const patientWeight = document.getElementById('patientWeight').value;
         
         const complaints = document.getElementById('complaints').value;
@@ -893,9 +898,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 ],
                 [
                     { content: "Height:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                    `${patientHeight} cm`, 
+                    patientHeight ? `${patientHeight} cm` : "", 
                     { content: "Weight:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                    `${patientWeight} kg`,
+                    patientWeight ? `${patientWeight} kg` : "",
                     "", 
                     ""
                 ]
@@ -1397,5 +1402,83 @@ function addCustomFooterInfo(doc, y) {
         doc.text(facebookText, 20 + 2 * spacing + spacing / 2 - 15 + iconWidth + iconSpacing, adjustedY + 12.5);
     } else {
         doc.text('📢 ' + facebookText, 20 + 2 * spacing + spacing / 2, adjustedY + 12, { align: 'center' });
+    }
+}
+
+// Function to convert height from feet to centimeters
+function convertFeetToCm(feetStr) {
+    // Format should be like "5.11" for 5 feet 11 inches
+    if (!feetStr || !feetStr.includes('.')) {
+        return null;
+    }
+    
+    try {
+        const parts = feetStr.split('.');
+        const feet = parseFloat(parts[0]);
+        let inches = parts[1] ? parseFloat(parts[1]) : 0;
+        
+        // Handle case where user might enter something like 5.1 meaning 5'1"
+        if (inches < 10 && parts[1].length === 1) {
+            inches = inches * 10;
+        }
+        
+        // Convert to cm: 1 foot = 30.48 cm, 1 inch = 2.54 cm
+        const totalCm = (feet * 30.48) + (inches * 2.54);
+        return Math.round(totalCm);
+    } catch (e) {
+        console.error('Error converting height:', e);
+        return null;
+    }
+}
+
+// Function to handle height unit changes
+function setupHeightConverter() {
+    const heightInput = document.getElementById('patientHeight');
+    const heightUnit = document.getElementById('heightUnit');
+    const heightConverted = document.getElementById('heightConverted');
+    
+    function updateHeightConversion() {
+        const value = heightInput.value.trim();
+        const unit = heightUnit.value;
+        
+        if (!value) {
+            heightConverted.textContent = '';
+            return;
+        }
+        
+        if (unit === 'ft') {
+            const cmValue = convertFeetToCm(value);
+            if (cmValue) {
+                heightConverted.textContent = `= ${cmValue} cm`;
+            } else {
+                heightConverted.textContent = 'Enter in format: feet.inches (e.g., 5.11 for 5\'11")';
+            }
+        } else {
+            heightConverted.textContent = '';
+        }
+    }
+    
+    // Add event listeners
+    heightInput.addEventListener('input', updateHeightConversion);
+    heightUnit.addEventListener('change', updateHeightConversion);
+}
+
+// Function to get the height value in cm regardless of input unit
+function getHeightInCm() {
+    const heightInput = document.getElementById('patientHeight');
+    const heightUnit = document.getElementById('heightUnit');
+    const value = heightInput.value.trim();
+    const unit = heightUnit.value;
+    
+    if (!value) {
+        return '';
+    }
+    
+    if (unit === 'ft') {
+        const cmValue = convertFeetToCm(value);
+        return cmValue ? cmValue : '';
+    } else {
+        // Already in cm
+        return value;
     }
 } 

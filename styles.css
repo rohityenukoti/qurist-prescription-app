@@ -321,4 +321,27 @@ button[type="reset"]:hover {
 
 #saveToSheetsBtn:hover {
     background-color: #45a049;
+}
+
+.height-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.height-input-group input {
+    flex: 1;
+}
+
+.height-input-group select {
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.converted-value {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
+    font-style: italic;
 } 
