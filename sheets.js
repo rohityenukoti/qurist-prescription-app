@@ -140,25 +140,22 @@ async function getAccessToken() {
                 await initGoogleAPI();
             }
             
-            if (!accessToken) {
-                console.log('Requesting access token...');
-                tokenClient.callback = (response) => {
-                    if (response.access_token) {
-                        console.log('Access token received in callback');
-                        accessToken = response.access_token;
-                        resolve(accessToken);
-                    } else {
-                        hideLoadingOnError();
-                        reject(new Error('Failed to get access token'));
-                    }
-                };
-                
-                tokenClient.requestAccessToken({
-                    prompt: 'consent'
-                });
-            } else {
-                resolve(accessToken);
-            }
+            // Always request a fresh token to ensure we have an active one
+            console.log('Requesting access token...');
+            tokenClient.callback = (response) => {
+                if (response.access_token) {
+                    console.log('Access token received in callback');
+                    accessToken = response.access_token;
+                    resolve(accessToken);
+                } else {
+                    hideLoadingOnError();
+                    reject(new Error('Failed to get access token'));
+                }
+            };
+            
+            tokenClient.requestAccessToken({
+                prompt: ''  // Use empty string for silent token refresh when possible
+            });
         } catch (error) {
             console.error('Error in getAccessToken:', error);
             hideLoadingOnError();
@@ -205,6 +202,16 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
 
         if (!response.ok) {
             const errorText = await response.text();
+            
+            // Check if token has expired (401 error)
+            if (response.status === 401) {
+                console.log('Token appears to be expired. Clearing and requesting a new one...');
+                // Clear the expired token
+                accessToken = null;
+                // Try again with a fresh token
+                return uploadPdfToDrive(pdfBlob, fileName, doctorId);
+            }
+            
             throw new Error(`Failed to upload file: ${response.status} ${errorText}`);
         }
 
@@ -226,6 +233,16 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
 
         if (!shareResponse.ok) {
             const errorText = await shareResponse.text();
+            
+            // Check if token has expired (401 error)
+            if (shareResponse.status === 401) {
+                console.log('Token appears to be expired during sharing. Clearing and retrying...');
+                // Clear the expired token
+                accessToken = null;
+                // Try again with a fresh token - need to upload again since we lost the file ID
+                return uploadPdfToDrive(pdfBlob, fileName, doctorId);
+            }
+            
             throw new Error(`Failed to share file: ${shareResponse.status} ${errorText}`);
         }
 
@@ -238,6 +255,16 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
 
         if (!fileResponse.ok) {
             const errorText = await fileResponse.text();
+            
+            // Check if token has expired (401 error)
+            if (fileResponse.status === 401) {
+                console.log('Token appears to be expired while getting URL. Clearing and retrying...');
+                // Clear the expired token
+                accessToken = null;
+                // Try again with a fresh token - need to upload again since we lost the file ID
+                return uploadPdfToDrive(pdfBlob, fileName, doctorId);
+            }
+            
             throw new Error(`Failed to get file URL: ${fileResponse.status} ${errorText}`);
         }
 
@@ -309,6 +336,15 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '') {
         console.log('Raw response:', responseText);
 
         if (!response.ok) {
+            // Check if token has expired (401 error)
+            if (response.status === 401) {
+                console.log('Token appears to be expired while saving to sheets. Clearing and retrying...');
+                // Clear the expired token
+                accessToken = null;
+                // Try again with a fresh token
+                return savePrescriptionToSheet(prescriptionData, pdfUrl);
+            }
+            
             throw new Error(`HTTP error! status: ${response.status}, response: ${responseText}`);
         }
 

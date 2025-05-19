@@ -724,9 +724,9 @@ document.addEventListener('DOMContentLoaded', function() {
             updateLoadingMessage('Authenticating with Google services...');
             
             // Ensure we're authenticated with Google before uploading
-            if (!window.accessToken) {
-                await window.getAccessToken();
-            }
+            // If the session was idle for a while, force a new token request
+            window.accessToken = null; // Clear any existing token to force refresh
+            await window.getAccessToken();
 
             // Upload the PDF to Google Drive
             updateLoadingMessage('Uploading PDF to Google Drive...');
