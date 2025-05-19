@@ -306,8 +306,20 @@ function getDefaultNotes(gender = '', medications = []) {
 
 // Add this function outside the DOMContentLoaded listener
 function resetForm() {
-    // Reset doctor selection
-    document.getElementById('doctorSelect').value = '';
+    // Reset doctor selection - but only if no user is logged in
+    if (!currentUser) {
+        document.getElementById('doctorSelect').value = '';
+        document.getElementById('doctorSelect').disabled = false;
+    } else {
+        // If user is logged in, keep their doctor selection
+        const email = currentUser.email.toLowerCase();
+        if (email.includes('rohit')) {
+            document.getElementById('doctorSelect').value = 'dr_rohit';
+        } else if (email.includes('rachna')) {
+            document.getElementById('doctorSelect').value = 'dr_rachna';
+        }
+        document.getElementById('doctorSelect').disabled = true;
+    }
     
     // Reset patient information
     document.getElementById('orderId').value = '';
