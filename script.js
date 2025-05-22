@@ -1435,10 +1435,8 @@ function convertFeetToCm(feetStr) {
         const feet = parseFloat(parts[0]);
         let inches = parts[1] ? parseFloat(parts[1]) : 0;
         
-        // Handle case where user might enter something like 5.1 meaning 5'1"
-        if (inches < 10 && parts[1].length === 1) {
-            inches = inches * 10;
-        }
+        // No special handling needed for single digit inches
+        // We want 5.7 to be treated as 5 feet 7 inches
         
         // Convert to cm: 1 foot = 30.48 cm, 1 inch = 2.54 cm
         const totalCm = (feet * 30.48) + (inches * 2.54);
