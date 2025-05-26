@@ -280,7 +280,7 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
 }
 
 // Save prescription data to Google Sheets, including PDF URL
-async function savePrescriptionToSheet(prescriptionData, pdfUrl = '') {
+async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount = 0, maxRetries = 3, baseDelay = 1000) {
     try {
         console.log('Starting save to Google Sheets...');
         
@@ -343,6 +343,26 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '') {
                 accessToken = null;
                 // Try again with a fresh token
                 return savePrescriptionToSheet(prescriptionData, pdfUrl);
+            }
+            
+            // Handle 503 Service Unavailable with retry logic
+            if (response.status === 503 && retryCount < maxRetries) {
+                console.log(`Service unavailable (503). Retry attempt ${retryCount + 1} of ${maxRetries}`);
+                
+                // Calculate delay with exponential backoff
+                const delay = baseDelay * Math.pow(2, retryCount);
+                console.log(`Waiting ${delay}ms before retrying...`);
+                
+                // Update loading message to show retry status
+                if (typeof updateLoadingMessage === 'function') {
+                    updateLoadingMessage(`Service temporarily unavailable. Retrying in ${delay/1000} seconds... (Attempt ${retryCount + 1}/${maxRetries})`);
+                }
+                
+                // Wait for the calculated delay
+                await new Promise(resolve => setTimeout(resolve, delay));
+                
+                // Retry the save operation with incremented retry count
+                return savePrescriptionToSheet(prescriptionData, pdfUrl, retryCount + 1, maxRetries, baseDelay);
             }
             
             throw new Error(`HTTP error! status: ${response.status}, response: ${responseText}`);
