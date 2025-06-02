@@ -345,9 +345,9 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount
                 return savePrescriptionToSheet(prescriptionData, pdfUrl);
             }
             
-            // Handle 503 Service Unavailable with retry logic
-            if (response.status === 503 && retryCount < maxRetries) {
-                console.log(`Service unavailable (503). Retry attempt ${retryCount + 1} of ${maxRetries}`);
+            const retryableErrors = [500, 502, 503, 504];
+            if (retryableErrors.includes(response.status) && retryCount < maxRetries) {
+                console.log(`Server error (${response.status}). Retry attempt ${retryCount + 1} of ${maxRetries}`);
                 
                 // Calculate delay with exponential backoff
                 const delay = baseDelay * Math.pow(2, retryCount);
