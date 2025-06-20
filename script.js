@@ -1310,6 +1310,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listener for the Clear Form button
     document.getElementById('clearFormBtn').addEventListener('click', function() {
         resetForm();
+        // Scroll to top after clearing form
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
     });
 
     // Add delegation for medication changes
