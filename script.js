@@ -438,6 +438,26 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeGoogleAuth();
     };
     
+    // Scroll to Top Button functionality
+    const scrollToTopBtn = document.getElementById('scrollToTopBtn');
+    
+    // Show/hide scroll to top button based on scroll position
+    window.addEventListener('scroll', function() {
+        if (window.pageYOffset > 300) {
+            scrollToTopBtn.classList.add('show');
+        } else {
+            scrollToTopBtn.classList.remove('show');
+        }
+    });
+    
+    // Scroll to top when button is clicked
+    scrollToTopBtn.addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+    
     // Initialize height converter
     setupHeightConverter();
     
