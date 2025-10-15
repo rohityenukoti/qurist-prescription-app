@@ -129,12 +129,23 @@ function initializeGoogleAuth() {
 
 // Function to update dosage options - move this OUTSIDE the DOMContentLoaded listener
 function updateDosageOptions(medicationSelect) {
-    const dosageSelect = medicationSelect.parentElement.parentElement.querySelector('.medication-dosage');
+    const medicationEntry = medicationSelect.parentElement.parentElement;
+    const dosageSelect = medicationEntry.querySelector('.medication-dosage');
+    const customMedInput = medicationEntry.querySelector('.custom-medication-input');
     const selectedMed = medicationSelect.value;
-    
+
+    // Show/hide custom medication input
+    if (selectedMed === 'custom') {
+        customMedInput.style.display = 'block';
+        customMedInput.focus();
+    } else {
+        customMedInput.style.display = 'none';
+        customMedInput.value = ''; // Clear custom input when switching away
+    }
+
     // Clear existing options
     dosageSelect.innerHTML = '<option value="">Select Dosage</option>';
-    
+
     // Add appropriate dosage options based on medication type
     if (selectedMed.includes('CBD') || selectedMed.includes('THC')) {
         const oilDosages = [
@@ -161,26 +172,26 @@ function updateDosageOptions(medicationSelect) {
             dosageSelect.add(option);
         });
     }
-    
+
     // Add custom option
     const customOption = new Option('Custom dosage...', 'custom');
     dosageSelect.add(customOption);
-    
+
     // Make sure the custom dosage textarea exists
-    let customDosageTextarea = medicationSelect.parentElement.parentElement.querySelector('.custom-dosage');
+    let customDosageTextarea = medicationEntry.querySelector('.custom-dosage');
     if (!customDosageTextarea) {
         customDosageTextarea = document.createElement('textarea');
         customDosageTextarea.className = 'custom-dosage';
         customDosageTextarea.placeholder = 'Enter custom dosage here...';
         customDosageTextarea.style.display = 'none';
-        medicationSelect.parentElement.parentElement.querySelector('.form-group:nth-child(2)').appendChild(customDosageTextarea);
-        
+        medicationEntry.querySelector('.form-group:nth-child(2)').appendChild(customDosageTextarea);
+
         // Add auto-resize listener
         customDosageTextarea.addEventListener('input', function() {
             autoResizeTextArea(this);
         });
     }
-    
+
     // Add change listener to the dosage select
     dosageSelect.addEventListener('change', function() {
         if (this.value === 'custom') {
@@ -190,7 +201,7 @@ function updateDosageOptions(medicationSelect) {
             customDosageTextarea.style.display = 'none';
         }
     });
-    
+
     updateInstructionOptions(medicationSelect);
 }
 
@@ -366,14 +377,21 @@ function resetForm() {
         firstEntry.querySelector('.medication-dosage').innerHTML = '<option value="">Select Dosage</option>';
         firstEntry.querySelector('.instructions-checklist').innerHTML = '';
         firstEntry.querySelector('.instructions-text').value = '';
-        
+
+        // Reset custom medication input if it exists
+        const customMedInput = firstEntry.querySelector('.custom-medication-input');
+        if (customMedInput) {
+            customMedInput.value = '';
+            customMedInput.style.display = 'none';
+        }
+
         // Reset custom dosage if it exists
         const customDosage = firstEntry.querySelector('.custom-dosage');
         if (customDosage) {
             customDosage.value = '';
             customDosage.style.display = 'none';
         }
-        
+
         // Remove all other entries
         for (let i = 1; i < medicationEntries.length; i++) {
             medicationEntries[i].remove();
@@ -559,7 +577,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     <option value="Painaway Pills">Painaway Pills</option>
                     <option value="Periodaid Pills">Periodaid Pills</option>
                     <option value="Sleepeasy Gummies">Sleepeasy Gummies</option>
+                    <option value="custom">Custom medication...</option>
                 </select>
+                <input type="text" class="custom-medication-input" placeholder="Enter custom medication name..." style="display: none;">
             </div>
             <div class="form-group">
                 <label for="dosage${medicationCounter}">Dosage:</label>
@@ -688,9 +708,20 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get medications
             const medicationEntries = document.querySelectorAll('.medication-entry');
             medicationEntries.forEach(entry => {
-                const medicationName = entry.querySelector('.medication-name').value;
+                const medicationSelect = entry.querySelector('.medication-name');
+                const medicationName = medicationSelect.value;
+
+                // Handle custom medication name
+                let displayName;
+                if (medicationName === 'custom') {
+                    const customMedInput = entry.querySelector('.custom-medication-input');
+                    displayName = customMedInput && customMedInput.value ? customMedInput.value : 'Custom medication';
+                } else {
+                    displayName = medicationName;
+                }
+
                 const dosageSelect = entry.querySelector('.medication-dosage');
-                
+
                 // Get dosage value (check for custom dosage)
                 let dosageValue;
                 if (dosageSelect.value === 'custom') {
@@ -699,9 +730,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 } else {
                     dosageValue = dosageSelect.value;
                 }
-                
+
                 const medication = {
-                    name: medicationName,
+                    name: displayName,
                     dosage: dosageValue,
                     instructions: entry.querySelector('.instructions-text').value
                 };
@@ -857,10 +888,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const medicationEntries = document.querySelectorAll('.medication-entry');
         
         medicationEntries.forEach(entry => {
-            const selectedName = entry.querySelector('.medication-name').value;
-            const displayName = medicationDisplayNames[selectedName] || selectedName;
+            const medicationSelect = entry.querySelector('.medication-name');
+            const selectedName = medicationSelect.value;
+
+            // Handle custom medication name
+            let displayName;
+            if (selectedName === 'custom') {
+                const customMedInput = entry.querySelector('.custom-medication-input');
+                displayName = customMedInput && customMedInput.value ? customMedInput.value : 'Custom medication';
+            } else {
+                displayName = medicationDisplayNames[selectedName] || selectedName;
+            }
+
             const dosageSelect = entry.querySelector('.medication-dosage');
-            
+
             // Get dosage value (check for custom dosage)
             let dosage;
             if (dosageSelect.value === 'custom') {
@@ -869,9 +910,9 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 dosage = dosageSelect.value;
             }
-            
+
             const instructions = entry.querySelector('.instructions-text').value;
-            
+
             medications.push({
                 name: displayName,
                 dosage,
