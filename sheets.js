@@ -279,6 +279,82 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
     }
 }
 
+// Helpers for monthly sheet handling
+function getMonthlySheetTitle(dateString) {
+    const monthAbbreviations = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    let dateObject = new Date(dateString);
+    if (isNaN(dateObject.getTime())) {
+        // Fallback to current date if parsing fails
+        dateObject = new Date();
+    }
+    const monthTitle = `${monthAbbreviations[dateObject.getMonth()]} ${dateObject.getFullYear()}`;
+    return monthTitle;
+}
+
+async function ensureSheetExists(spreadsheetId, sheetTitle, retryCount = 0) {
+    // Ensure we have an access token
+    if (!accessToken) {
+        await getAccessToken();
+    }
+
+    // Get spreadsheet metadata to check existing sheets
+    const metadataResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    if (!metadataResponse.ok) {
+        if (metadataResponse.status === 401 && retryCount < 1) {
+            // Refresh token and retry once
+            accessToken = null;
+            await getAccessToken();
+            return ensureSheetExists(spreadsheetId, sheetTitle, retryCount + 1);
+        }
+        const errorText = await metadataResponse.text();
+        throw new Error(`Failed to fetch spreadsheet metadata: ${metadataResponse.status} ${errorText}`);
+    }
+
+    const spreadsheet = await metadataResponse.json();
+    const sheets = (spreadsheet.sheets || []).map(s => (s.properties || {}).title);
+    const sheetAlreadyExists = sheets.includes(sheetTitle);
+
+    if (sheetAlreadyExists) {
+        return;
+    }
+
+    // Create the sheet if it doesn't exist
+    const addSheetResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}:batchUpdate`, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            requests: [
+                {
+                    addSheet: {
+                        properties: {
+                            title: sheetTitle
+                        }
+                    }
+                }
+            ]
+        })
+    });
+
+    if (!addSheetResponse.ok) {
+        if (addSheetResponse.status === 401 && retryCount < 1) {
+            // Refresh token and retry once
+            accessToken = null;
+            await getAccessToken();
+            return ensureSheetExists(spreadsheetId, sheetTitle, retryCount + 1);
+        }
+        const errorText = await addSheetResponse.text();
+        throw new Error(`Failed to create sheet '${sheetTitle}': ${addSheetResponse.status} ${errorText}`);
+    }
+}
+
 // Save prescription data to Google Sheets, including PDF URL
 async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount = 0, maxRetries = 3, baseDelay = 1000) {
     try {
@@ -293,6 +369,10 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount
         if (!accessToken) {
             throw new Error('Failed to obtain access token');
         }
+
+        // Determine the monthly sheet title and ensure it exists
+        const sheetTitle = getMonthlySheetTitle(prescriptionData.date);
+        await ensureSheetExists(SPREADSHEET_ID, sheetTitle);
 
         // Format the data for Google Sheets, now including PDF URL
         const values = [
@@ -321,7 +401,7 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount
         console.log('Attempting to save data to Google Sheets...');
 
         // Append the data to the sheet using fetch API (expanded to include the PDF URL column)
-        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/Sheet1!A:Q:append?valueInputOption=RAW`, {
+        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetTitle)}!A:Q:append?valueInputOption=RAW`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
