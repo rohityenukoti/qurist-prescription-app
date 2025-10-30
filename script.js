@@ -449,6 +449,64 @@ function updateLoadingMessage(message) {
     }
 }
 
+// Success lightbox helpers
+let lastUploadedPdfUrl = '';
+
+function showSuccessLightbox(pdfUrl) {
+    lastUploadedPdfUrl = pdfUrl || '';
+    const overlay = document.getElementById('successLightbox');
+    const linkPreview = document.getElementById('linkPreview');
+    const copyBtn = document.getElementById('copyLinkBtn');
+    if (linkPreview) {
+        linkPreview.textContent = lastUploadedPdfUrl;
+    }
+    if (copyBtn) {
+        copyBtn.textContent = 'Copy prescription link';
+        copyBtn.disabled = false;
+    }
+    if (overlay) {
+        overlay.classList.add('show');
+    }
+}
+
+function hideSuccessLightbox() {
+    const overlay = document.getElementById('successLightbox');
+    if (overlay) {
+        overlay.classList.remove('show');
+    }
+}
+
+async function copyPrescriptionLink() {
+    const copyBtn = document.getElementById('copyLinkBtn');
+    try {
+        if (!lastUploadedPdfUrl) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(lastUploadedPdfUrl);
+        } else {
+            const ta = document.createElement('textarea');
+            ta.value = lastUploadedPdfUrl;
+            document.body.appendChild(ta);
+            ta.select();
+            document.execCommand('copy');
+            document.body.removeChild(ta);
+        }
+        if (copyBtn) {
+            const original = copyBtn.textContent;
+            copyBtn.textContent = 'Copied!';
+            copyBtn.disabled = true;
+            setTimeout(() => {
+                copyBtn.textContent = original;
+                copyBtn.disabled = false;
+            }, 1500);
+        }
+    } catch (e) {
+        console.error('Failed to copy link', e);
+        if (copyBtn) {
+            copyBtn.textContent = 'Copy failed';
+        }
+    }
+}
+
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Google authentication
@@ -478,6 +536,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize height converter
     setupHeightConverter();
+
+    // Wire success lightbox buttons
+    const copyLinkBtn = document.getElementById('copyLinkBtn');
+    const closeSuccessBtn = document.getElementById('closeSuccessBtn');
+    const successOverlay = document.getElementById('successLightbox');
+    if (copyLinkBtn) {
+        copyLinkBtn.addEventListener('click', copyPrescriptionLink);
+    }
+    if (closeSuccessBtn) {
+        closeSuccessBtn.addEventListener('click', hideSuccessLightbox);
+    }
+    if (successOverlay) {
+        successOverlay.addEventListener('click', function(e) {
+            if (e.target === successOverlay) {
+                hideSuccessLightbox();
+            }
+        });
+    }
     
     // Add event listener for logout button
     document.getElementById('logoutBtn').addEventListener('click', function() {
@@ -792,7 +868,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 // Hide the loading overlay after a short delay to ensure the user sees the success message
                 hideLoadingOverlay();
-                alert('Prescription data and PDF saved successfully!');
+                showSuccessLightbox(pdfUrl);
             }, 500);
         } catch (error) {
             console.error('Error in save to sheets handler:', error);
