@@ -219,14 +219,14 @@ function updateInstructionOptions(medicationSelect) {
             'Sublingually -- 30 minutes before bedtime -- After Dinner',
             'Sublingually -- After Breakfast',
             'Sublingually -- After Lunch',
-            'Sublingually -- As and When Required (SOS)',
+            'Sublingually -- As and When Required (SOS) -- After Meals',
             'External Application -- As and When Required (SOS)'
         ]
         : [
             '30 minutes before bedtime -- After Dinner',
             'After Breakfast',
             'After Lunch',
-            'As and When Required (SOS)'
+            'As and When Required (SOS) -- After Meals'
         ];
 
     const checklistDiv = instructionsContainer.querySelector('.instructions-checklist');
