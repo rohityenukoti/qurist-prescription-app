@@ -187,6 +187,7 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
 
         // Get the correct folder ID based on the doctor
         const folderId = DRIVE_FOLDER_IDS[doctorId] || DRIVE_FOLDER_IDS.dr_rohit;
+        const folderUrl = `https://drive.google.com/drive/folders/${folderId}`;
 
         // Create form data for the file upload
         const formData = new FormData();
@@ -226,60 +227,96 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
         const result = await response.json();
         console.log('File uploaded successfully. File ID:', result.id);
         
-        // Make the file publicly accessible
-        const shareResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}/permissions`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                role: 'reader',
-                type: 'anyone'
-            })
-        });
+        // From here on, NEVER re-upload the PDF just because the token expired while sharing/getting URL.
+        // Re-uploading creates duplicate Drive files (what you're seeing as "uploaded three times").
+        const fileId = result.id;
 
-        if (!shareResponse.ok) {
-            const errorText = await shareResponse.text();
-            
-            // Check if token has expired (401 error)
-            if (shareResponse.status === 401) {
-                console.log('Token appears to be expired during sharing. Clearing and retrying...');
-                // Clear the expired token
-                accessToken = null;
-                // Try again with a fresh token - need to upload again since we lost the file ID
-                return uploadPdfToDrive(pdfBlob, fileName, doctorId);
+        // Expose info for the UI to tell the user where to find the file if link fetching fails.
+        // (This is especially helpful when running from GitHub Pages where some Drive calls can be CORS-blocked.)
+        window.lastDriveUploadInfo = { fileId, folderId, folderUrl, fileName };
+
+        // Make the file publicly accessible (best-effort).
+        // Note: this request uses JSON which can trigger CORS preflight; if it fails, we still try to continue.
+        try {
+            const shareResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    role: 'reader',
+                    type: 'anyone'
+                })
+            });
+
+            if (!shareResponse.ok) {
+                const errorText = await shareResponse.text();
+                if (shareResponse.status === 401) {
+                    console.log('Token expired during sharing. Refreshing token and retrying share (no re-upload).');
+                    accessToken = null;
+                    await getAccessToken();
+                    // Retry once with refreshed token
+                    const retryShare = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ role: 'reader', type: 'anyone' })
+                    });
+                    if (!retryShare.ok) {
+                        const retryText = await retryShare.text();
+                        console.warn(`Failed to share file after token refresh: ${retryShare.status} ${retryText}`);
+                    }
+                } else {
+                    console.warn(`Failed to share file: ${shareResponse.status} ${errorText}`);
+                }
             }
-            
-            throw new Error(`Failed to share file: ${shareResponse.status} ${errorText}`);
+        } catch (e) {
+            console.warn('Sharing step failed (continuing to get link anyway):', e);
         }
 
-        // Get the file's web view URL
-        const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${result.id}?fields=webViewLink`, {
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            }
-        });
+        // Get the file's web view URL (best-effort).
+        // If this fails, the upload still succeeded — return an empty URL and let the UI tell the user to open the Drive folder.
+        try {
+            const fileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink`, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
 
-        if (!fileResponse.ok) {
-            const errorText = await fileResponse.text();
-            
-            // Check if token has expired (401 error)
-            if (fileResponse.status === 401) {
-                console.log('Token appears to be expired while getting URL. Clearing and retrying...');
-                // Clear the expired token
-                accessToken = null;
-                // Try again with a fresh token - need to upload again since we lost the file ID
-                return uploadPdfToDrive(pdfBlob, fileName, doctorId);
+            if (!fileResponse.ok) {
+                const errorText = await fileResponse.text();
+                if (fileResponse.status === 401) {
+                    console.log('Token expired while getting URL. Refreshing token and retrying get-link (no re-upload).');
+                    accessToken = null;
+                    await getAccessToken();
+                    const retryFileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink`, {
+                        headers: { 'Authorization': `Bearer ${accessToken}` }
+                    });
+                    if (!retryFileResponse.ok) {
+                        const retryText = await retryFileResponse.text();
+                        console.warn(`Upload succeeded but failed to fetch link after token refresh: ${retryFileResponse.status} ${retryText}`);
+                        return '';
+                    }
+                    const retryData = await retryFileResponse.json();
+                    console.log('File link fetched successfully. URL:', retryData.webViewLink);
+                    return retryData.webViewLink || '';
+                }
+
+                console.warn(`Upload succeeded but failed to fetch link: ${fileResponse.status} ${errorText}`);
+                return '';
             }
-            
-            throw new Error(`Failed to get file URL: ${fileResponse.status} ${errorText}`);
+
+            const fileData = await fileResponse.json();
+            console.log('File link fetched successfully. URL:', fileData.webViewLink);
+
+            return fileData.webViewLink || '';
+        } catch (e) {
+            console.warn('Upload succeeded but link fetch failed (continuing without link):', e);
+            return '';
         }
-
-        const fileData = await fileResponse.json();
-        console.log('File shared successfully. URL:', fileData.webViewLink);
-        
-        return fileData.webViewLink;
     } catch (error) {
         // In browsers, CORS/preflight failures surface as a generic TypeError "Failed to fetch".
         // Add a clearer hint for static hosting (GitHub Pages) scenarios.

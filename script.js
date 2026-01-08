@@ -457,12 +457,29 @@ function showSuccessLightbox(pdfUrl) {
     const overlay = document.getElementById('successLightbox');
     const linkPreview = document.getElementById('linkPreview');
     const copyBtn = document.getElementById('copyLinkBtn');
+    const driveInfo = window.lastDriveUploadInfo || null;
+    const folderUrl = driveInfo && driveInfo.folderUrl ? driveInfo.folderUrl : '';
+
     if (linkPreview) {
-        linkPreview.textContent = lastUploadedPdfUrl;
+        if (lastUploadedPdfUrl) {
+            linkPreview.textContent = lastUploadedPdfUrl;
+        } else if (folderUrl) {
+            linkPreview.textContent = `Uploaded to Drive, but link couldn't be fetched. Open folder: ${folderUrl}`;
+        } else {
+            linkPreview.textContent = 'Uploaded to Drive, but link could not be fetched.';
+        }
     }
     if (copyBtn) {
-        copyBtn.textContent = 'Copy prescription link';
-        copyBtn.disabled = false;
+        if (lastUploadedPdfUrl) {
+            copyBtn.textContent = 'Copy prescription link';
+            copyBtn.disabled = false;
+        } else if (folderUrl) {
+            copyBtn.textContent = 'Open Drive folder';
+            copyBtn.disabled = false;
+        } else {
+            copyBtn.textContent = 'Close';
+            copyBtn.disabled = false;
+        }
     }
     if (overlay) {
         overlay.classList.add('show');
@@ -479,7 +496,15 @@ function hideSuccessLightbox() {
 async function copyPrescriptionLink() {
     const copyBtn = document.getElementById('copyLinkBtn');
     try {
-        if (!lastUploadedPdfUrl) return;
+        // If we don't have a file link, fall back to opening the Drive folder.
+        if (!lastUploadedPdfUrl) {
+            const driveInfo = window.lastDriveUploadInfo || null;
+            const folderUrl = driveInfo && driveInfo.folderUrl ? driveInfo.folderUrl : '';
+            if (folderUrl) {
+                window.open(folderUrl, '_blank', 'noopener,noreferrer');
+            }
+            return;
+        }
         if (navigator.clipboard && navigator.clipboard.writeText) {
             await navigator.clipboard.writeText(lastUploadedPdfUrl);
         } else {
@@ -860,12 +885,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             await window.getAccessToken();
 
-            // Upload the PDF to Google Drive
+            // Upload the PDF to Google Drive (required).
+            // If link fetch fails, `uploadPdfToDrive()` returns an empty string but the upload is still successful.
             updateLoadingMessage('Uploading PDF to Google Drive...');
             const pdfUrl = await uploadPdfToDrive(pdfBlob, fileName, doctorSelect);
+            if (!pdfUrl) {
+                const driveInfo = window.lastDriveUploadInfo || null;
+                const folderUrl = driveInfo && driveInfo.folderUrl ? driveInfo.folderUrl : '';
+                const extra = folderUrl ? `\n\nOpen Drive folder to find it:\n${folderUrl}` : '';
+                alert(`PDF uploaded to Drive, but the share link could not be fetched in the browser.${extra}\n\nThe sheet row will be saved without the PDF link.`);
+            }
             
-            // Save data to Google Sheets with the PDF URL
-            updateLoadingMessage('Saving prescription data to Google Sheets...');
+            // Save data to Google Sheets (always attempt)
+            if (!pdfUrl) {
+                updateLoadingMessage('Saving prescription data to Google Sheets...');
+            } else {
+                updateLoadingMessage('Saving prescription data to Google Sheets (with PDF link)...');
+            }
             await savePrescriptionToSheet(prescriptionData, pdfUrl);
             
             // Final confirmation message
