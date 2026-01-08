@@ -15,6 +15,12 @@ const DRIVE_FOLDER_IDS = {
 let tokenClient;
 let accessToken = null;
 
+// Expose a safe way for other scripts to clear the in-scope token.
+// (Note: `let accessToken` is not the same as `window.accessToken`.)
+function clearGoogleAccessToken() {
+    accessToken = null;
+}
+
 // Helper function to hide loading spinner during API errors
 function hideLoadingOnError() {
     if (typeof hideLoadingOverlay === 'function') {
@@ -192,11 +198,13 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
         formData.append('file', pdfBlob);
 
         // Upload the file to Drive
-        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        //
+        // IMPORTANT (GitHub Pages + CORS):
+        // The Drive *upload* endpoint often fails CORS preflight when using the `Authorization` header from a static site.
+        // Using `access_token` as a query parameter avoids the browser preflight for this POST (since we don't set non-simple headers).
+        const uploadUrl = `https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&access_token=${encodeURIComponent(accessToken)}`;
+        const response = await fetch(uploadUrl, {
             method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${accessToken}`
-            },
             body: formData
         });
 
@@ -273,6 +281,15 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
         
         return fileData.webViewLink;
     } catch (error) {
+        // In browsers, CORS/preflight failures surface as a generic TypeError "Failed to fetch".
+        // Add a clearer hint for static hosting (GitHub Pages) scenarios.
+        if (error instanceof TypeError && /Failed to fetch/i.test(error.message || '')) {
+            console.error(
+                'Drive upload failed at the network/CORS layer. ' +
+                'If you are running this from GitHub Pages, Drive uploads may be blocked by CORS. ' +
+                'Consider using an Apps Script / server-side proxy for Drive uploads.'
+            );
+        }
         console.error('Error uploading PDF to Drive:', error);
         hideLoadingOnError();
         throw error;
@@ -474,3 +491,4 @@ window.initGoogleAPI = initGoogleAPI;
 window.savePrescriptionToSheet = savePrescriptionToSheet;
 window.uploadPdfToDrive = uploadPdfToDrive;
 window.revokeAccess = revokeAccess; 
+window.clearGoogleAccessToken = clearGoogleAccessToken;

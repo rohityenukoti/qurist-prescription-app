@@ -852,7 +852,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Ensure we're authenticated with Google before uploading
             // If the session was idle for a while, force a new token request
-            window.accessToken = null; // Clear any existing token to force refresh
+            // Force token refresh (sheets.js keeps `accessToken` in a lexical scope, not `window.accessToken`)
+            if (typeof window.clearGoogleAccessToken === 'function') {
+                window.clearGoogleAccessToken();
+            } else {
+                window.accessToken = null;
+            }
             await window.getAccessToken();
 
             // Upload the PDF to Google Drive
