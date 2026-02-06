@@ -1295,7 +1295,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add new sections for telehealth notice, travel disclaimer, and disclaimer
         // Check if we need a new page based on available space
-        const additionalSectionsHeight = 105; // Approximate height needed for all additional sections including follow-up and contact information
+        const additionalSectionsHeight = 125; // Approximate height needed for all additional sections including follow-up and contact information
         if (finalY + additionalSectionsHeight > doc.internal.pageSize.height - 20) {
             doc.addPage();
             finalY = 20;
@@ -1344,6 +1344,21 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Update finalY after travel disclaimer
         finalY += 7 + (splitTravelDisclaimer.length * 5);
+
+        // Add occupational safety advisory
+        finalY += 10;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Occupational Safety Advisory:', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        const safetyDisclaimer = 'CBD products may cause drowsiness. Avoid safety-sensitive tasks while using them. Confirm fitness for duty with your employer or relevant authority. ' +
+            'Occupational suitability is assessed outside the prescribing physician’s scope.';
+        const splitSafetyDisclaimer = doc.splitTextToSize(safetyDisclaimer, 170);
+        doc.text(splitSafetyDisclaimer, 20, finalY + 7);
+
+        // Update finalY after safety advisory
+        finalY += 7 + (splitSafetyDisclaimer.length * 5);
         
         // Add Important Patient Agreement and Disclaimer
         finalY += 5;
