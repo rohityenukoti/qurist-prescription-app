@@ -1379,7 +1379,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Contact Information:', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        doc.text('For any further queries, please contact: +91 9485848844', 
+        doc.text('For any further queries, please contact: +91 8448298093', 
             20, finalY + 7);
         
         finalY += 15;
