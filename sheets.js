@@ -7,7 +7,8 @@ const CLIENT_ID = '135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleuser
 // IDs of folders in Google Drive where PDFs will be stored, by doctor
 const DRIVE_FOLDER_IDS = { 
     dr_rohit: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P',
-    dr_rachna: '1Kv8U6FbGX4equiElhVB5ydZpgcXGZeFM'
+    dr_rachna: '1Kv8U6FbGX4equiElhVB5ydZpgcXGZeFM',
+    dr_parul: '1uPj2gdGEOMuFNHdVatYPjrjKniId5TG5'
 };
 
 

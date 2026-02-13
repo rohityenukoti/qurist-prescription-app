@@ -1,6 +1,6 @@
 // Authentication variables
 let currentUser = null;
-const ALLOWED_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in'];
+const ALLOWED_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in'];
 
 // Handle Google Sign-In response
 function handleCredentialResponse(response) {
@@ -32,6 +32,9 @@ function handleCredentialResponse(response) {
             document.getElementById('doctorSelect').disabled = true;
         } else if (email.includes('rachna')) {
             document.getElementById('doctorSelect').value = 'dr_rachna';
+            document.getElementById('doctorSelect').disabled = true;
+        } else if (email.includes('parul')) {
+            document.getElementById('doctorSelect').value = 'dr_parul';
             document.getElementById('doctorSelect').disabled = true;
         }
         
@@ -328,6 +331,8 @@ function resetForm() {
             document.getElementById('doctorSelect').value = 'dr_rohit';
         } else if (email.includes('rachna')) {
             document.getElementById('doctorSelect').value = 'dr_rachna';
+        } else if (email.includes('parul')) {
+            document.getElementById('doctorSelect').value = 'dr_parul';
         }
         document.getElementById('doctorSelect').disabled = true;
     }
@@ -771,7 +776,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 date: document.getElementById('date').value,
                 doctorName: document.getElementById('doctorSelect').value === 'dr_rohit' 
                     ? 'Dr. Rohit Yenukoti' 
-                    : 'Dr. Rachna Chandra',
+                    : document.getElementById('doctorSelect').value === 'dr_rachna'
+                    ? 'Dr. Rachna Chandra'
+                    : 'Dr. Parul',
                 orderId: document.getElementById('orderId').value,
                 patientName: document.getElementById('patientName').value,
                 patientAge: document.getElementById('patientAge').value,
@@ -957,6 +964,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 name: "Dr. Rachna Chandra",
                 designation: "MBBS, MD",
                 regNo: "DMC/R/2261"
+            },
+            dr_parul: {
+                name: "Dr. Parul",
+                designation: "BAMS",
+                regNo: "DBCP/A/7986"
             }
         };
 
@@ -1277,7 +1289,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Add signature on the right side at the same level
             const signatureImg = document.getElementById(
-                doctorSelect === 'dr_rachna' ? 'rachnaSignature' : 'rohitSignature'
+                doctorSelect === 'dr_rachna' ? 'rachnaSignature' : doctorSelect === 'dr_parul' ? 'parulSignature' : 'rohitSignature'
             );
             
             if (signatureImg.complete && signatureImg.naturalHeight !== 0) {
