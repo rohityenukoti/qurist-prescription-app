@@ -1357,6 +1357,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update finalY after travel disclaimer
         finalY += 7 + (splitTravelDisclaimer.length * 5);
 
+        // Add final safety advisory
+        finalY += 10;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(2, 113, 128);
+        doc.text('Safety Advisory', 20, finalY);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(0);
+        const finalSafetyAdvisory = 'In case of accidental ingestion by a child or pet, seek immediate medical or veterinary attention and carry the product label.';
+        const splitFinalSafetyAdvisory = doc.splitTextToSize(finalSafetyAdvisory, 170);
+        doc.text(splitFinalSafetyAdvisory, 20, finalY + 7);
+        
+        // Update finalY after final safety advisory
+        finalY += 7 + (splitFinalSafetyAdvisory.length * 5);
+
         // Add occupational safety advisory
         finalY += 10;
         doc.setFont('helvetica', 'bold');
