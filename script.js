@@ -1678,6 +1678,12 @@ function setupHeightConverter() {
     
     function updateHeightConversion() {
         const value = heightInput.value.trim();
+        
+        // If the height starts with 1, treat it as centimeters automatically.
+        if (value.startsWith('1') && heightUnit.value !== 'cm') {
+            heightUnit.value = 'cm';
+        }
+        
         const unit = heightUnit.value;
         
         if (unit === 'ft') {
