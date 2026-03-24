@@ -1314,6 +1314,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         // Add follow-up section
+        const SECTION_GAP = 10;
         finalY += 15;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
@@ -1332,7 +1333,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text(followUpText.replace('Follow up consultation on ', ''), 20, finalY + 7);
         
         // Add telehealth consultation notice
-        finalY += 15;
+        finalY += 7 + 5 + SECTION_GAP;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
         doc.text('Telehealth Notice:', 20, finalY);
@@ -1342,7 +1343,7 @@ document.addEventListener('DOMContentLoaded', function() {
             20, finalY + 7);
         
         // Add travel disclaimer
-        finalY += 15;
+        finalY += 7 + 5 + SECTION_GAP;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
         doc.text('Travel Advisory:', 20, finalY);
@@ -1355,10 +1356,9 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text(splitTravelDisclaimer, 20, finalY + 7);
         
         // Update finalY after travel disclaimer
-        finalY += 7 + (splitTravelDisclaimer.length * 5);
+        finalY += 7 + (splitTravelDisclaimer.length * 5) + SECTION_GAP;
 
         // Add final safety advisory
-        finalY += 10;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
         doc.text('Safety Advisory', 20, finalY);
@@ -1369,10 +1369,9 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text(splitFinalSafetyAdvisory, 20, finalY + 7);
         
         // Update finalY after final safety advisory
-        finalY += 7 + (splitFinalSafetyAdvisory.length * 5);
+        finalY += 7 + (splitFinalSafetyAdvisory.length * 5) + SECTION_GAP;
 
         // Add occupational safety advisory
-        finalY += 10;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
         doc.text('Occupational Safety Advisory:', 20, finalY);
@@ -1384,10 +1383,9 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text(splitSafetyDisclaimer, 20, finalY + 7);
 
         // Update finalY after safety advisory
-        finalY += 7 + (splitSafetyDisclaimer.length * 5);
+        finalY += 7 + (splitSafetyDisclaimer.length * 5) + SECTION_GAP;
         
         // Add Important Patient Agreement and Disclaimer
-        finalY += 5;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
         doc.text('Important Patient Agreement and Disclaimer:', 20, finalY);
@@ -1397,7 +1395,7 @@ document.addEventListener('DOMContentLoaded', function() {
             20, finalY + 7);
         
         // Update finalY after disclaimer before adding contact information
-        finalY += 15;
+        finalY += 7 + 5 + SECTION_GAP;
         
         // Add Contact Information section
         doc.setFont('helvetica', 'bold');
