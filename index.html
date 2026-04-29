@@ -9,6 +9,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <script src="https://apis.google.com/js/api.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="app-config.js"></script>
     <script src="sheets.js"></script>
 </head>
 <body>
@@ -67,10 +68,131 @@
     <div id="appContainer" class="container" style="display: none;">
         <div class="user-info">
             <span id="userEmail"></span>
+            <button id="adminModeBtn" type="button" style="display: none;">Admin Mode</button>
             <button id="logoutBtn">Logout</button>
         </div>
+        <div id="configStatus" class="config-status">Using default app settings.</div>
         <h1>Qurist Digital Prescription</h1>
         
+        <section id="adminPanel" class="admin-panel" style="display: none;">
+            <div class="admin-header">
+                <div>
+                    <h2>Admin Mode</h2>
+                    <p>Edit safe app content. Changes are saved to the App Config tab in Google Sheets.</p>
+                </div>
+                <button type="button" id="closeAdminBtn" class="secondary">Close Admin</button>
+            </div>
+
+            <div id="adminMessage" class="admin-message"></div>
+
+            <div class="admin-grid">
+                <div class="form-group">
+                    <label for="adminComplaints">Complaint checklist options</label>
+                    <textarea id="adminComplaints" placeholder="One complaint per line"></textarea>
+                    <small>One option per line.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminMedications">Medication options</label>
+                    <textarea id="adminMedications" placeholder="Dropdown name | PDF name | type"></textarea>
+                    <small>One medication per line: Dropdown name | PDF name | oil/pills/gummies/other</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminOilDosages">Oil dosage options</label>
+                    <textarea id="adminOilDosages" placeholder="Display text | saved value"></textarea>
+                    <small>One dosage per line. Use Display | Value, or just Display.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminPillDosages">Pill dosage options</label>
+                    <textarea id="adminPillDosages" placeholder="Display text | saved value"></textarea>
+                    <small>One dosage per line.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminGummyDosages">Gummy dosage options</label>
+                    <textarea id="adminGummyDosages" placeholder="Display text | saved value"></textarea>
+                    <small>One dosage per line.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminOilInstructions">Oil instruction checklist</label>
+                    <textarea id="adminOilInstructions" placeholder="One instruction per line"></textarea>
+                    <small>Used for oil medications.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminOtherInstructions">Pill/gummy instruction checklist</label>
+                    <textarea id="adminOtherInstructions" placeholder="One instruction per line"></textarea>
+                    <small>Used for non-oil medications.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminBaseNotes">Default additional instructions</label>
+                    <textarea id="adminBaseNotes" placeholder="One note per line"></textarea>
+                    <small>Bullets are added automatically.</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminFemaleNote">Female patient note</label>
+                    <textarea id="adminFemaleNote"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminOilNotes">Oil-specific notes</label>
+                    <textarea id="adminOilNotes" placeholder="One note per line"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminPillGummyNotes">Pill/gummy-specific notes</label>
+                    <textarea id="adminPillGummyNotes" placeholder="One note per line"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="adminFooter">Footer and social links</label>
+                    <textarea id="adminFooter" placeholder="Company | CIN | Website | Instagram | Facebook"></textarea>
+                    <small>Format: Company | CIN | Website | Instagram | Facebook</small>
+                </div>
+
+                <div class="form-group admin-wide">
+                    <label for="adminTelehealthNotice">Telehealth Notice</label>
+                    <textarea id="adminTelehealthNotice"></textarea>
+                </div>
+
+                <div class="form-group admin-wide">
+                    <label for="adminTravelAdvisory">Travel Advisory</label>
+                    <textarea id="adminTravelAdvisory"></textarea>
+                </div>
+
+                <div class="form-group admin-wide">
+                    <label for="adminSafetyAdvisory">Safety Advisory</label>
+                    <textarea id="adminSafetyAdvisory"></textarea>
+                </div>
+
+                <div class="form-group admin-wide">
+                    <label for="adminOccupationalSafety">Occupational Safety Advisory</label>
+                    <textarea id="adminOccupationalSafety"></textarea>
+                </div>
+
+                <div class="form-group admin-wide">
+                    <label for="adminPatientAgreement">Patient Agreement</label>
+                    <textarea id="adminPatientAgreement"></textarea>
+                </div>
+
+                <div class="form-group admin-wide">
+                    <label for="adminContactInformation">Contact Information</label>
+                    <textarea id="adminContactInformation"></textarea>
+                </div>
+            </div>
+
+            <div class="admin-actions">
+                <button type="button" id="reloadAdminConfigBtn" class="secondary">Reload From Sheets</button>
+                <button type="button" id="resetAdminConfigBtn" class="secondary">Reset To Defaults</button>
+                <button type="button" id="saveAdminConfigBtn">Save Admin Settings</button>
+            </div>
+        </section>
+
         <form id="prescriptionForm">
             <div class="form-section">
                 <div class="form-group">
@@ -166,16 +288,6 @@
                             <label for="medication1">Medication:</label>
                             <select id="medication1" class="medication-name" onchange="updateDosageOptions(this)">
                                 <option value="">Select Medication</option>
-                                <option value="CBD mild">CBD mild</option>
-                                <option value="CBD medium">CBD medium</option>
-                                <option value="CBD strong">CBD strong</option>
-                                <option value="CBD + THC mild">CBD + THC mild</option>
-                                <option value="CBD + THC medium">CBD + THC medium</option>
-                                <option value="CBD + THC strong">CBD + THC strong</option>
-                                <option value="Painaway Pills">Painaway Pills</option>
-                                <option value="Periodaid Pills">Periodaid Pills</option>
-                                <option value="Sleepeasy Gummies">Sleepeasy Gummies</option>
-                                <option value="custom">Custom medication...</option>
                             </select>
                             <input type="text" class="custom-medication-input" placeholder="Enter custom medication name..." style="display: none;">
                         </div>

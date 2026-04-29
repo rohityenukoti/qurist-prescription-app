@@ -1,6 +1,425 @@
 // Authentication variables
 let currentUser = null;
 const ALLOWED_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in'];
+const ADMIN_EMAILS = ['rohit@qurist.in'];
+const CONFIG_CACHE_KEY = 'quristAppConfig';
+let appConfig = window.mergeQuristConfig ? window.mergeQuristConfig() : {};
+let appConfigMeta = { source: 'defaults', updatedAt: '' };
+let medicationCounter = 1;
+
+function isEmailAllowed(email, allowedEmails) {
+    return allowedEmails.some(
+        allowed => allowed.toLowerCase() === email ||
+        email.includes(allowed.split('@')[0].toLowerCase())
+    );
+}
+
+function getCachedConfig() {
+    try {
+        const cached = localStorage.getItem(CONFIG_CACHE_KEY);
+        return cached ? JSON.parse(cached) : null;
+    } catch (error) {
+        console.warn('Unable to read cached app config:', error);
+        return null;
+    }
+}
+
+function setCachedConfig(config, updatedAt = '') {
+    try {
+        localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({ config, updatedAt }));
+    } catch (error) {
+        console.warn('Unable to cache app config:', error);
+    }
+}
+
+function applyAppConfig(config, meta = {}) {
+    appConfig = window.mergeQuristConfig ? window.mergeQuristConfig(config) : config;
+    appConfigMeta = {
+        source: meta.source || 'defaults',
+        updatedAt: meta.updatedAt || ''
+    };
+    renderConfigDrivenFields();
+    updateAdminStatus();
+}
+
+function loadCachedAppConfig() {
+    const cached = getCachedConfig();
+    if (cached && cached.config) {
+        applyAppConfig(cached.config, { source: 'cache', updatedAt: cached.updatedAt || '' });
+    }
+}
+
+async function loadRemoteAppConfig(options = {}) {
+    const silent = Boolean(options.silent);
+    try {
+        if (typeof window.getAppConfigFromSheet !== 'function') {
+            throw new Error('App config sheet helper is unavailable.');
+        }
+
+        const result = await window.getAppConfigFromSheet();
+        if (result && result.config) {
+            applyAppConfig(result.config, { source: 'google-sheet', updatedAt: result.updatedAt || '' });
+            setCachedConfig(appConfig, result.updatedAt || '');
+        }
+        return result;
+    } catch (error) {
+        console.warn('Unable to load remote app config:', error);
+        if (!silent) {
+            alert('Could not load admin settings from Google Sheets. The app is using the latest local/default settings.');
+        }
+        return null;
+    }
+}
+
+function getMedicationConfig(medicationId) {
+    return (appConfig.medications || []).find(med => med.id === medicationId) || null;
+}
+
+function getMedicationType(medicationId) {
+    const medication = getMedicationConfig(medicationId);
+    if (medication && medication.type) {
+        return medication.type;
+    }
+    if (medicationId.includes('CBD') || medicationId.includes('THC')) {
+        return 'oil';
+    }
+    if (medicationId.includes('Pills')) {
+        return 'pills';
+    }
+    if (medicationId.includes('Gummies')) {
+        return 'gummies';
+    }
+    return 'other';
+}
+
+function getInstructionOptionsForMedication(medicationId) {
+    const type = getMedicationType(medicationId);
+    return appConfig.instructionOptions[type] || appConfig.instructionOptions.other || [];
+}
+
+function getDosageOptionsForMedication(medicationId) {
+    const type = getMedicationType(medicationId);
+    return appConfig.dosageOptions[type] || appConfig.dosageOptions.other || [];
+}
+
+function addSelectOption(select, value, label) {
+    select.add(new Option(label, value));
+}
+
+function renderMedicationOptions(select) {
+    if (!select) {
+        return;
+    }
+
+    const selectedValue = select.value;
+    select.innerHTML = '<option value="">Select Medication</option>';
+    (appConfig.medications || []).forEach(medication => {
+        addSelectOption(select, medication.id, medication.label || medication.id);
+    });
+    addSelectOption(select, 'custom', 'Custom medication...');
+    select.value = selectedValue;
+}
+
+function renderAllMedicationOptions() {
+    document.querySelectorAll('.medication-name').forEach(select => {
+        renderMedicationOptions(select);
+    });
+}
+
+function createCheckboxItem(value) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'checkbox-item';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.value = value;
+
+    const label = document.createElement('label');
+    label.textContent = value;
+
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(label);
+    return wrapper;
+}
+
+function renderComplaintsChecklist() {
+    const complaintsChecklistDiv = document.querySelector('.complaints-checklist');
+    if (!complaintsChecklistDiv) {
+        return;
+    }
+
+    complaintsChecklistDiv.innerHTML = '';
+    (appConfig.complaints || []).forEach(complaint => {
+        complaintsChecklistDiv.appendChild(createCheckboxItem(complaint));
+    });
+}
+
+function renderConfigDrivenFields() {
+    renderComplaintsChecklist();
+    renderAllMedicationOptions();
+}
+
+function getElementValue(id) {
+    const element = document.getElementById(id);
+    return element ? element.value : '';
+}
+
+function setElementValue(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.value = value || '';
+        if (element.tagName === 'TEXTAREA') {
+            autoResizeTextArea(element);
+        }
+    }
+}
+
+function parseLines(value) {
+    return String(value || '')
+        .split('\n')
+        .map(line => line.trim())
+        .filter(Boolean);
+}
+
+function serializeLines(values) {
+    return (values || []).join('\n');
+}
+
+function parseDosageLines(value) {
+    return parseLines(value).map(line => {
+        const parts = line.split('|').map(part => part.trim());
+        const display = parts[0] || '';
+        return {
+            display,
+            value: parts[1] || display
+        };
+    });
+}
+
+function serializeDosageLines(values) {
+    return (values || [])
+        .map(dosage => `${dosage.display || dosage.value}${dosage.value && dosage.value !== dosage.display ? ` | ${dosage.value}` : ''}`)
+        .join('\n');
+}
+
+function parseMedicationLines(value) {
+    return parseLines(value).map(line => {
+        const parts = line.split('|').map(part => part.trim());
+        const label = parts[0] || '';
+        return {
+            id: label,
+            label,
+            pdfName: parts[1] || label,
+            type: parts[2] || 'other'
+        };
+    });
+}
+
+function serializeMedicationLines(values) {
+    return (values || [])
+        .map(medication => `${medication.label || medication.id} | ${medication.pdfName || medication.label || medication.id} | ${medication.type || 'other'}`)
+        .join('\n');
+}
+
+function parseFooter(value) {
+    const parts = String(value || '').split('|').map(part => part.trim());
+    return {
+        companyName: parts[0] || '',
+        cin: parts[1] || '',
+        website: parts[2] || '',
+        instagram: parts[3] || '',
+        facebook: parts[4] || ''
+    };
+}
+
+function serializeFooter(footer) {
+    const currentFooter = footer || {};
+    return [
+        currentFooter.companyName || '',
+        currentFooter.cin || '',
+        currentFooter.website || '',
+        currentFooter.instagram || '',
+        currentFooter.facebook || ''
+    ].join(' | ');
+}
+
+function populateAdminForm(config = appConfig) {
+    setElementValue('adminComplaints', serializeLines(config.complaints));
+    setElementValue('adminMedications', serializeMedicationLines(config.medications));
+    setElementValue('adminOilDosages', serializeDosageLines(config.dosageOptions.oil));
+    setElementValue('adminPillDosages', serializeDosageLines(config.dosageOptions.pills));
+    setElementValue('adminGummyDosages', serializeDosageLines(config.dosageOptions.gummies));
+    setElementValue('adminOilInstructions', serializeLines(config.instructionOptions.oil));
+    setElementValue('adminOtherInstructions', serializeLines(config.instructionOptions.other));
+    setElementValue('adminBaseNotes', serializeLines(config.defaultNotes.base));
+    setElementValue('adminFemaleNote', config.defaultNotes.female || '');
+    setElementValue('adminOilNotes', serializeLines(config.defaultNotes.oil));
+    setElementValue('adminPillGummyNotes', serializeLines(config.defaultNotes.pillsOrGummies));
+    setElementValue('adminFooter', serializeFooter(config.footer));
+    setElementValue('adminTelehealthNotice', config.pdfText.telehealthNotice);
+    setElementValue('adminTravelAdvisory', config.pdfText.travelAdvisory);
+    setElementValue('adminSafetyAdvisory', config.pdfText.safetyAdvisory);
+    setElementValue('adminOccupationalSafety', config.pdfText.occupationalSafetyAdvisory);
+    setElementValue('adminPatientAgreement', config.pdfText.patientAgreement);
+    setElementValue('adminContactInformation', config.pdfText.contactInformation);
+}
+
+function buildConfigFromAdminForm() {
+    const currentDefaults = window.cloneQuristConfig ? window.cloneQuristConfig(window.QURIST_DEFAULT_APP_CONFIG) : {};
+    return {
+        version: 1,
+        complaints: parseLines(getElementValue('adminComplaints')),
+        medications: parseMedicationLines(getElementValue('adminMedications')),
+        dosageOptions: {
+            oil: parseDosageLines(getElementValue('adminOilDosages')),
+            pills: parseDosageLines(getElementValue('adminPillDosages')),
+            gummies: parseDosageLines(getElementValue('adminGummyDosages')),
+            other: currentDefaults.dosageOptions ? currentDefaults.dosageOptions.other : []
+        },
+        instructionOptions: {
+            oil: parseLines(getElementValue('adminOilInstructions')),
+            other: parseLines(getElementValue('adminOtherInstructions'))
+        },
+        defaultNotes: {
+            base: parseLines(getElementValue('adminBaseNotes')).map(note => note.replace(/^•\s*/, '')),
+            female: getElementValue('adminFemaleNote').trim().replace(/^•\s*/, ''),
+            oil: parseLines(getElementValue('adminOilNotes')).map(note => note.replace(/^•\s*/, '')),
+            pillsOrGummies: parseLines(getElementValue('adminPillGummyNotes')).map(note => note.replace(/^•\s*/, ''))
+        },
+        pdfText: {
+            telehealthNotice: getElementValue('adminTelehealthNotice').trim(),
+            travelAdvisory: getElementValue('adminTravelAdvisory').trim(),
+            safetyAdvisory: getElementValue('adminSafetyAdvisory').trim(),
+            occupationalSafetyAdvisory: getElementValue('adminOccupationalSafety').trim(),
+            patientAgreement: getElementValue('adminPatientAgreement').trim(),
+            contactInformation: getElementValue('adminContactInformation').trim()
+        },
+        footer: parseFooter(getElementValue('adminFooter'))
+    };
+}
+
+function validateAdminConfig(config) {
+    const errors = [];
+    const validMedicationTypes = ['oil', 'pills', 'gummies', 'other'];
+
+    if (!config.complaints.length) {
+        errors.push('Add at least one complaint option.');
+    }
+
+    if (!config.medications.length) {
+        errors.push('Add at least one medication option.');
+    }
+
+    const medicationIds = new Set();
+    config.medications.forEach((medication, index) => {
+        if (!medication.label) {
+            errors.push(`Medication row ${index + 1} is missing a dropdown name.`);
+        }
+        if (!validMedicationTypes.includes(medication.type)) {
+            errors.push(`Medication "${medication.label}" must use type oil, pills, gummies, or other.`);
+        }
+        if (medicationIds.has(medication.id.toLowerCase())) {
+            errors.push(`Medication "${medication.label}" is duplicated.`);
+        }
+        medicationIds.add(medication.id.toLowerCase());
+    });
+
+    ['oil', 'pills', 'gummies'].forEach(type => {
+        if (!config.dosageOptions[type].length) {
+            errors.push(`Add at least one ${type} dosage option.`);
+        }
+        config.dosageOptions[type].forEach((dosage, index) => {
+            if (!dosage.display || !dosage.value) {
+                errors.push(`${type} dosage row ${index + 1} must include display text.`);
+            }
+        });
+    });
+
+    if (!config.instructionOptions.oil.length) {
+        errors.push('Add at least one oil instruction.');
+    }
+    if (!config.instructionOptions.other.length) {
+        errors.push('Add at least one pill/gummy instruction.');
+    }
+    if (!config.defaultNotes.base.length) {
+        errors.push('Add at least one default additional instruction.');
+    }
+
+    Object.entries(config.pdfText).forEach(([key, value]) => {
+        if (!value) {
+            errors.push(`The ${key} text cannot be empty.`);
+        }
+        if (value.length > 1200) {
+            errors.push(`The ${key} text is too long. Keep it under 1200 characters.`);
+        }
+    });
+
+    if (!config.footer.companyName || !config.footer.website) {
+        errors.push('Footer must include at least company name and website.');
+    }
+
+    return errors;
+}
+
+function showAdminMessage(message, type = 'success') {
+    const adminMessage = document.getElementById('adminMessage');
+    if (!adminMessage) {
+        return;
+    }
+    adminMessage.textContent = message;
+    adminMessage.className = `admin-message ${type}`;
+}
+
+function clearAdminMessage() {
+    const adminMessage = document.getElementById('adminMessage');
+    if (!adminMessage) {
+        return;
+    }
+    adminMessage.textContent = '';
+    adminMessage.className = 'admin-message';
+}
+
+function updateAdminVisibility() {
+    const adminModeBtn = document.getElementById('adminModeBtn');
+    if (adminModeBtn) {
+        adminModeBtn.style.display = currentUser && currentUser.isAdmin ? 'inline-block' : 'none';
+    }
+}
+
+function updateAdminStatus() {
+    const status = document.getElementById('configStatus');
+    if (!status) {
+        return;
+    }
+
+    const updatedText = appConfigMeta.updatedAt ? ` Last saved: ${new Date(appConfigMeta.updatedAt).toLocaleString()}.` : '';
+    const sourceLabel = appConfigMeta.source === 'google-sheet'
+        ? 'Google Sheets'
+        : appConfigMeta.source === 'cache'
+        ? 'cached settings'
+        : 'default app settings';
+    status.textContent = `Using ${sourceLabel}.${updatedText}`;
+    status.style.display = currentUser && currentUser.isAdmin ? 'block' : 'none';
+}
+
+function openAdminPanel() {
+    if (!currentUser || !currentUser.isAdmin) {
+        alert('Only authorized admin users can open admin mode.');
+        return;
+    }
+
+    populateAdminForm();
+    clearAdminMessage();
+    document.getElementById('adminPanel').style.display = 'block';
+    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function closeAdminPanel() {
+    const adminPanel = document.getElementById('adminPanel');
+    if (adminPanel) {
+        adminPanel.style.display = 'none';
+    }
+}
 
 // Handle Google Sign-In response
 function handleCredentialResponse(response) {
@@ -11,11 +430,10 @@ function handleCredentialResponse(response) {
     // Convert to lowercase for case-insensitive comparison
     const email = credential.email.toLowerCase();
     
-    // Check if email is in the allowed list (case-insensitive)
-    const isAllowed = ALLOWED_EMAILS.some(
-        allowed => allowed.toLowerCase() === email || 
-        email.includes(allowed.split('@')[0].toLowerCase())
-    );
+    // Check if email is in the doctor or admin allowlists.
+    const isDoctor = isEmailAllowed(email, ALLOWED_EMAILS);
+    const isAdmin = isEmailAllowed(email, ADMIN_EMAILS);
+    const isAllowed = isDoctor || isAdmin;
     
     if (isAllowed) {
         // Valid doctor email
@@ -23,7 +441,9 @@ function handleCredentialResponse(response) {
         currentUser = {
             email: email,
             name: credential.name,
-            picture: credential.picture
+            picture: credential.picture,
+            isDoctor,
+            isAdmin
         };
         
         // Set the doctor select based on the email (case-insensitive)
@@ -36,6 +456,9 @@ function handleCredentialResponse(response) {
         } else if (email.includes('parul')) {
             document.getElementById('doctorSelect').value = 'dr_parul';
             document.getElementById('doctorSelect').disabled = true;
+        } else {
+            document.getElementById('doctorSelect').value = '';
+            document.getElementById('doctorSelect').disabled = !isDoctor;
         }
         
         // Display login success and show app
@@ -49,6 +472,8 @@ function handleCredentialResponse(response) {
         setTimeout(() => {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
+            updateAdminVisibility();
+            loadRemoteAppConfig({ silent: true });
         }, 1000);
     } else {
         // Invalid doctor email
@@ -85,6 +510,10 @@ function logout() {
     // Show login overlay and hide app
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('appContainer').style.display = 'none';
+    const adminPanel = document.getElementById('adminPanel');
+    if (adminPanel) {
+        adminPanel.style.display = 'none';
+    }
     
     // Reset login message
     document.getElementById('loginMessage').textContent = '';
@@ -92,6 +521,7 @@ function logout() {
     
     // Clear form if needed
     resetForm();
+    updateAdminVisibility();
     
     // Sign out from Google
     google.accounts.id.disableAutoSelect();
@@ -149,32 +579,12 @@ function updateDosageOptions(medicationSelect) {
     // Clear existing options
     dosageSelect.innerHTML = '<option value="">Select Dosage</option>';
 
-    // Add appropriate dosage options based on medication type
-    if (selectedMed.includes('CBD') || selectedMed.includes('THC')) {
-        const oilDosages = [
-            { value: '0.25 ml', display: '0.25 ml (1/4 ml)' },
-            { value: '0.5 ml', display: '0.5 ml (1/2 ml)' },
-            { value: '0.75 ml', display: '0.75 ml (3/4 ml)' },
-            { value: '1 ml', display: '1 ml' }
-        ];
-        oilDosages.forEach(dosage => {
-            const option = new Option(dosage.display, dosage.value);
-            dosageSelect.add(option);
-        });
-    } else if (selectedMed.includes('Pills')) {
-        const option = new Option('1 capsule', '1 capsule');
+    getDosageOptionsForMedication(selectedMed).forEach(dosage => {
+        const value = dosage.value || dosage.display;
+        const display = dosage.display || dosage.value;
+        const option = new Option(display, value);
         dosageSelect.add(option);
-    } else if (selectedMed.includes('Gummies')) {
-        const gummyDosages = [
-            { value: '1/4 gummy', display: '1/4 gummy' },
-            { value: '1/2 gummy', display: '1/2 gummy' },
-            { value: '1 gummy', display: '1 gummy' }
-        ];
-        gummyDosages.forEach(dosage => {
-            const option = new Option(dosage.display, dosage.value);
-            dosageSelect.add(option);
-        });
-    }
+    });
 
     // Add custom option
     const customOption = new Option('Custom dosage...', 'custom');
@@ -196,14 +606,14 @@ function updateDosageOptions(medicationSelect) {
     }
 
     // Add change listener to the dosage select
-    dosageSelect.addEventListener('change', function() {
+    dosageSelect.onchange = function() {
         if (this.value === 'custom') {
             customDosageTextarea.style.display = 'block';
             customDosageTextarea.focus();
         } else {
             customDosageTextarea.style.display = 'none';
         }
-    });
+    };
 
     updateInstructionOptions(medicationSelect);
 }
@@ -216,31 +626,11 @@ function updateInstructionOptions(medicationSelect) {
     // Clear existing options
     instructionsContainer.querySelector('.instructions-checklist').innerHTML = '';
     
-    // Add appropriate instruction options based on medication type
-    const instructions = selectedMed.includes('CBD') || selectedMed.includes('THC') 
-        ? [
-            'Sublingually -- 30 minutes before bedtime -- After Dinner',
-            'Sublingually -- After Breakfast',
-            'Sublingually -- After Lunch',
-            'Sublingually -- As and When Required (SOS) -- After Meals',
-            'External Application -- As and When Required (SOS)'
-        ]
-        : [
-            '30 minutes before bedtime -- After Dinner',
-            'After Breakfast',
-            'After Lunch',
-            'As and When Required (SOS) -- After Meals'
-        ];
+    const instructions = getInstructionOptionsForMedication(selectedMed);
 
     const checklistDiv = instructionsContainer.querySelector('.instructions-checklist');
     instructions.forEach(instruction => {
-        const checkbox = document.createElement('div');
-        checkbox.className = 'checkbox-item';
-        checkbox.innerHTML = `
-            <input type="checkbox" value="${instruction}">
-            <label>${instruction}</label>
-        `;
-        checklistDiv.appendChild(checkbox);
+        checklistDiv.appendChild(createCheckboxItem(instruction));
     });
 }
 
@@ -281,41 +671,39 @@ function addPageContinuationText(doc, pageNum, totalPages) {
 
 // Add this function outside the DOMContentLoaded listener
 function getDefaultNotes(gender = '', medications = []) {
-    const baseNotes = [
-        "• Do not combine with alcohol, sleeping pills, or painkillers.",
-        "• Store securely away from children.",
-        "• Inform your treating physician about using CBD for your medical condition.",
-        "• Follow sleep hygiene measures as discussed.",
-        "• Maintain age-appropriate healthy nutrition and physical activity as discussed for your medical condition.",
-        "• Limit yourself to only one type of CBD product within a 24-hour period."
-    ];
+    const noteConfig = appConfig.defaultNotes || {};
+    const baseNotes = (noteConfig.base || []).map(formatBulletNote);
     
     // Add pregnancy note only for female patients
-    if (gender.toLowerCase() === 'female') {
-        baseNotes.splice(3, 0, "• Not recommended during pregnancy or breastfeeding or planning to conceive.");
+    if (gender.toLowerCase() === 'female' && noteConfig.female) {
+        baseNotes.splice(3, 0, formatBulletNote(noteConfig.female));
     }
     
-    // Check for oils (CBD, THC)
-    const hasOils = medications.some(med => 
-        med.toLowerCase().includes('cbd') || 
-        med.toLowerCase().includes('thc'));
+    const hasOils = medications.some(med => getMedicationType(med) === 'oil');
     
-    // Check for pills or gummies
-    const hasPillsOrGummies = medications.some(med => 
-        med.toLowerCase().includes('pills') || 
-        med.toLowerCase().includes('gummies'));
+    const hasPillsOrGummies = medications.some(med => {
+        const type = getMedicationType(med);
+        return type === 'pills' || type === 'gummies';
+    });
     
     // Add conditional rest instructions
     if (hasOils) {
-        baseNotes.push("• Rest for 6 hours after consuming CBD oils.");
-        baseNotes.push("• If relief is insufficient, dosage may be gradually increased by 0.25ml increments up to a maximum of 1ml per day.");
+        (noteConfig.oil || []).forEach(note => baseNotes.push(formatBulletNote(note)));
     }
     
     if (hasPillsOrGummies) {
-        baseNotes.push("• Rest and hydrate well the day after consuming CBD pills or gummies.");
+        (noteConfig.pillsOrGummies || []).forEach(note => baseNotes.push(formatBulletNote(note)));
     }
     
     return baseNotes.join('\n');
+}
+
+function formatBulletNote(note) {
+    const trimmed = String(note || '').trim();
+    if (!trimmed) {
+        return '';
+    }
+    return trimmed.startsWith('•') ? trimmed : `• ${trimmed}`;
 }
 
 // Add this function outside the DOMContentLoaded listener
@@ -416,9 +804,13 @@ function updateNotesBasedOnMedications() {
     const currentNotes = document.getElementById('notes').value;
     const notesTextarea = document.getElementById('notes');
     
-    // Check if it's likely the default notes (contains our common starting points)
-    if (currentNotes.includes("• Do not combine with alcohol") && 
-        currentNotes.includes("• Store securely away from children")) {
+    const baseNotes = (appConfig.defaultNotes && appConfig.defaultNotes.base) || [];
+    const defaultAnchors = baseNotes.slice(0, 2).map(formatBulletNote);
+    const looksLikeDefaultNotes = defaultAnchors.length === 0 ||
+        defaultAnchors.every(note => currentNotes.includes(note));
+
+    // Only replace notes if the doctor has not moved away from the default note template.
+    if (looksLikeDefaultNotes) {
         notesTextarea.value = getDefaultNotes(gender, selectedMeds);
         autoResizeTextArea(notesTextarea);
     }
@@ -539,6 +931,9 @@ async function copyPrescriptionLink() {
 
 // Wait for the DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
+    loadCachedAppConfig();
+    renderConfigDrivenFields();
+
     // Initialize Google authentication
     window.onload = function() {
         initializeGoogleAuth();
@@ -589,6 +984,77 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('logoutBtn').addEventListener('click', function() {
         logout();
     });
+
+    const adminModeBtn = document.getElementById('adminModeBtn');
+    const closeAdminBtn = document.getElementById('closeAdminBtn');
+    const reloadAdminConfigBtn = document.getElementById('reloadAdminConfigBtn');
+    const resetAdminConfigBtn = document.getElementById('resetAdminConfigBtn');
+    const saveAdminConfigBtn = document.getElementById('saveAdminConfigBtn');
+
+    if (adminModeBtn) {
+        adminModeBtn.addEventListener('click', openAdminPanel);
+    }
+    if (closeAdminBtn) {
+        closeAdminBtn.addEventListener('click', closeAdminPanel);
+    }
+    if (reloadAdminConfigBtn) {
+        reloadAdminConfigBtn.addEventListener('click', async function() {
+            clearAdminMessage();
+            this.disabled = true;
+            const originalText = this.textContent;
+            this.textContent = 'Loading...';
+            try {
+                const result = await loadRemoteAppConfig();
+                if (!result || !result.config) {
+                    applyAppConfig(window.cloneQuristConfig(window.QURIST_DEFAULT_APP_CONFIG), { source: 'defaults' });
+                }
+                populateAdminForm();
+                showAdminMessage(result && result.config ? 'Loaded admin settings from Google Sheets.' : 'No saved admin settings found. Defaults are loaded.');
+            } finally {
+                this.textContent = originalText;
+                this.disabled = false;
+            }
+        });
+    }
+    if (resetAdminConfigBtn) {
+        resetAdminConfigBtn.addEventListener('click', function() {
+            populateAdminForm(window.cloneQuristConfig(window.QURIST_DEFAULT_APP_CONFIG));
+            showAdminMessage('Defaults loaded in the admin form. Click Save Admin Settings to publish them.');
+        });
+    }
+    if (saveAdminConfigBtn) {
+        saveAdminConfigBtn.addEventListener('click', async function() {
+            clearAdminMessage();
+            const nextConfig = buildConfigFromAdminForm();
+            const errors = validateAdminConfig(nextConfig);
+            if (errors.length) {
+                showAdminMessage(errors.join(' '), 'error');
+                return;
+            }
+
+            const originalText = this.textContent;
+            this.disabled = true;
+            this.textContent = 'Saving...';
+            try {
+                if (typeof window.saveAppConfigToSheet !== 'function') {
+                    throw new Error('App config save helper is unavailable.');
+                }
+                const result = await window.saveAppConfigToSheet(nextConfig);
+                applyAppConfig(nextConfig, { source: 'google-sheet', updatedAt: result.updatedAt });
+                setCachedConfig(appConfig, result.updatedAt);
+                populateAdminForm();
+                showAdminMessage('Admin settings saved successfully.');
+            } catch (error) {
+                console.error('Unable to save admin settings:', error);
+                showAdminMessage(`Could not save admin settings: ${error.message}`, 'error');
+            } finally {
+                this.textContent = originalText;
+                this.disabled = false;
+            }
+        });
+    }
+    updateAdminVisibility();
+    updateAdminStatus();
     
     // Check authentication before allowing certain actions
     const checkAuth = function(event, action) {
@@ -615,29 +1081,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Initialize complaints checklist
-    const complaintsOptions = [
-        'Anxiety',
-        'Insomnia',
-        'Pain',
-        'Fatigue',
-        'Muscle Soreness',
-        'Overthinking',
-        'Menstrual Pain',
-        'Migraine'
-    ];
-    
     const complaintsChecklistDiv = document.querySelector('.complaints-checklist');
-    complaintsOptions.forEach(complaint => {
-        const checkbox = document.createElement('div');
-        checkbox.className = 'checkbox-item';
-        checkbox.innerHTML = `
-            <input type="checkbox" value="${complaint}">
-            <label>${complaint}</label>
-        `;
-        complaintsChecklistDiv.appendChild(checkbox);
-    });
-
     // Add event listener for complaints checkboxes
     complaintsChecklistDiv.addEventListener('change', function(e) {
         if (e.target.type === 'checkbox') {
@@ -659,9 +1103,6 @@ document.addEventListener('DOMContentLoaded', function() {
         updateNotesBasedOnMedications();
     });
     
-    // Initialize medication counter
-    let medicationCounter = 1;
-    
     // Add event listener to the "Add Another Medication" button
     document.getElementById('addMedicationBtn').addEventListener('click', function() {
         medicationCounter++;
@@ -674,16 +1115,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 <label for="medication${medicationCounter}">Medication:</label>
                 <select id="medication${medicationCounter}" class="medication-name" required onchange="updateDosageOptions(this)">
                     <option value="">Select Medication</option>
-                    <option value="CBD mild">CBD mild</option>
-                    <option value="CBD medium">CBD medium</option>
-                    <option value="CBD strong">CBD strong</option>
-                    <option value="CBD + THC mild">CBD + THC mild</option>
-                    <option value="CBD + THC medium">CBD + THC medium</option>
-                    <option value="CBD + THC strong">CBD + THC strong</option>
-                    <option value="Painaway Pills">Painaway Pills</option>
-                    <option value="Periodaid Pills">Periodaid Pills</option>
-                    <option value="Sleepeasy Gummies">Sleepeasy Gummies</option>
-                    <option value="custom">Custom medication...</option>
                 </select>
                 <input type="text" class="custom-medication-input" placeholder="Enter custom medication name..." style="display: none;">
             </div>
@@ -703,6 +1134,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Add the new medication entry to the container
         document.getElementById('medicationsContainer').appendChild(medicationEntry);
+        renderMedicationOptions(medicationEntry.querySelector('.medication-name'));
         
         // Add event listener to the remove button
         medicationEntry.querySelector('.remove-medication-btn').addEventListener('click', function() {
@@ -738,7 +1170,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listener to the "Generate Prescription" button
     document.getElementById('generatePdfBtn').addEventListener('click', function(event) {
         // Check if user is authenticated
-        if (!currentUser) {
+        if (!currentUser || !currentUser.isDoctor) {
             alert('You must be logged in as an authorized doctor to generate prescriptions.');
             return;
         }
@@ -754,7 +1186,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add event listener for Save to Google Sheets button
     document.getElementById('saveToSheetsBtn').addEventListener('click', async function(event) {
         // Check if user is authenticated
-        if (!currentUser) {
+        if (!currentUser || !currentUser.isDoctor) {
             alert('You must be logged in as an authorized doctor to save prescriptions to Google Sheets.');
             return;
         }
@@ -932,24 +1364,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to generate the prescription PDF
     function generatePrescriptionPDF(returnBlob = false) {
         // Check authentication status
-        if (!currentUser) {
+        if (!currentUser || !currentUser.isDoctor) {
             alert('You must be logged in as an authorized doctor to generate prescriptions.');
             return null;
         }
         
-        // Add medication name mapping
-        const medicationDisplayNames = {
-            'CBD mild': 'Qurist Wide Spectrum Mild Potency Oil',
-            'CBD medium': 'Qurist Wide Spectrum Medium Potency Oil',
-            'CBD strong': 'Qurist Wide Spectrum Strong Potency Oil',
-            'CBD + THC mild': 'Qurist Full Spectrum Mild Potency Oil',
-            'CBD + THC medium': 'Qurist Full Spectrum Medium Potency Oil',
-            'CBD + THC strong': 'Qurist Full Spectrum Strong Potency Oil',
-            'Painaway Pills': 'Qurist Painaway Pills',
-            'Periodaid Pills': 'Qurist Periodaid Pills',
-            'Sleepeasy Gummies': 'Qurist Sleepeasy Gummies'
-        };
-
         // Get form data - automatically use authenticated doctor
         const doctorSelect = document.getElementById('doctorSelect').value;
         
@@ -1026,7 +1445,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const customMedInput = entry.querySelector('.custom-medication-input');
                 displayName = customMedInput && customMedInput.value ? customMedInput.value : 'Custom medication';
             } else {
-                displayName = medicationDisplayNames[selectedName] || selectedName;
+                const medicationConfig = getMedicationConfig(selectedName);
+                displayName = medicationConfig && medicationConfig.pdfName ? medicationConfig.pdfName : selectedName;
             }
 
             const dosageSelect = entry.querySelector('.medication-dosage');
@@ -1339,19 +1759,18 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Telehealth Notice:', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        doc.text('This prescription is generated on tele-consultation (no physical contact with patient).', 
-            20, finalY + 7);
+        const telehealthNotice = appConfig.pdfText.telehealthNotice || '';
+        const splitTelehealthNotice = doc.splitTextToSize(telehealthNotice, 170);
+        doc.text(splitTelehealthNotice, 20, finalY + 7);
         
         // Add travel disclaimer
-        finalY += 7 + 5 + SECTION_GAP;
+        finalY += 7 + (splitTelehealthNotice.length * 5) + SECTION_GAP;
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
         doc.text('Travel Advisory:', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        const travelDisclaimer = 'For domestic travel within India: Please carry this prescription with you when traveling with Qurist products. ' +
-            'International travel advisory: Qurist products contain CBD and THC. Check laws and regulations of all points in your journey. ' +
-            'Approved for use in India. Kindly ensure compliance with local regulations when abroad.';
+        const travelDisclaimer = appConfig.pdfText.travelAdvisory || '';
         const splitTravelDisclaimer = doc.splitTextToSize(travelDisclaimer, 170);
         doc.text(splitTravelDisclaimer, 20, finalY + 7);
         
@@ -1364,7 +1783,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Safety Advisory', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        const finalSafetyAdvisory = 'In case of accidental ingestion by a child or pet, seek immediate medical or veterinary attention and carry the product label.';
+        const finalSafetyAdvisory = appConfig.pdfText.safetyAdvisory || '';
         const splitFinalSafetyAdvisory = doc.splitTextToSize(finalSafetyAdvisory, 170);
         doc.text(splitFinalSafetyAdvisory, 20, finalY + 7);
         
@@ -1377,8 +1796,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Occupational Safety Advisory:', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        const safetyDisclaimer = 'CBD products may cause drowsiness. Avoid safety-sensitive tasks while using them. Confirm fitness for duty with your employer or relevant authority. ' +
-            'Occupational suitability is assessed outside the prescribing physician’s scope.';
+        const safetyDisclaimer = appConfig.pdfText.occupationalSafetyAdvisory || '';
         const splitSafetyDisclaimer = doc.splitTextToSize(safetyDisclaimer, 170);
         doc.text(splitSafetyDisclaimer, 20, finalY + 7);
 
@@ -1391,11 +1809,12 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Important Patient Agreement and Disclaimer:', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        doc.text('This prescription is solely for therapeutic purposes and should not be used for medico-legal purposes.', 
-            20, finalY + 7);
+        const patientAgreement = appConfig.pdfText.patientAgreement || '';
+        const splitPatientAgreement = doc.splitTextToSize(patientAgreement, 170);
+        doc.text(splitPatientAgreement, 20, finalY + 7);
         
         // Update finalY after disclaimer before adding contact information
-        finalY += 7 + 5 + SECTION_GAP;
+        finalY += 7 + (splitPatientAgreement.length * 5) + SECTION_GAP;
         
         // Add Contact Information section
         doc.setFont('helvetica', 'bold');
@@ -1403,10 +1822,11 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Contact Information:', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        doc.text('For any further queries, please contact: +91 8448298093', 
-            20, finalY + 7);
+        const contactInformation = appConfig.pdfText.contactInformation || '';
+        const splitContactInformation = doc.splitTextToSize(contactInformation, 170);
+        doc.text(splitContactInformation, 20, finalY + 7);
         
-        finalY += 15;
+        finalY += 7 + (splitContactInformation.length * 5) + SECTION_GAP;
         
         // Add footer image at the bottom of the last page
         const footerImg = document.getElementById('footerImage');
@@ -1582,22 +2002,24 @@ function addCustomFooterInfo(doc, y) {
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(10);
     doc.setTextColor(255, 255, 255); // Change to white color
-    
+
     // Adjust vertical position - move everything up by adjusting y coordinate
     const adjustedY = y - 25; // Move the footer up by 25 units
-    
+
+    const footerConfig = appConfig.footer || {};
+
     // Add company name
-    doc.text('Hemp Health Pvt. Ltd.', doc.internal.pageSize.width / 2, adjustedY, { align: 'center' });
-    
+    doc.text(footerConfig.companyName || '', doc.internal.pageSize.width / 2, adjustedY, { align: 'center' });
+
     // Add CIN number
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
-    doc.text('CIN No. U2423 | HR2020PTC087774', doc.internal.pageSize.width / 2, adjustedY + 5, { align: 'center' });
+    doc.text(footerConfig.cin || '', doc.internal.pageSize.width / 2, adjustedY + 5, { align: 'center' });
     
     // Add social media and website links with images
-    const websiteText = 'www.qurist.in';
-    const instagramText = '@quristcbd';
-    const facebookText = '@quristcbd';
+    const websiteText = footerConfig.website || '';
+    const instagramText = footerConfig.instagram || '';
+    const facebookText = footerConfig.facebook || '';
     
     // Calculate positions for the three links to be evenly spaced
     const totalWidth = doc.internal.pageSize.width - 40; // leaving 20 units margin on each side

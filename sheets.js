@@ -10,6 +10,7 @@ const DRIVE_FOLDER_IDS = {
     dr_rachna: '1Kv8U6FbGX4equiElhVB5ydZpgcXGZeFM',
     dr_parul: '1uPj2gdGEOMuFNHdVatYPjrjKniId5TG5'
 };
+const APP_CONFIG_SHEET_TITLE = 'App Config';
 
 
 
@@ -410,6 +411,101 @@ async function ensureSheetExists(spreadsheetId, sheetTitle, retryCount = 0) {
     }
 }
 
+function getSheetRange(sheetTitle, range) {
+    const escapedTitle = sheetTitle.replace(/'/g, "''");
+    return `'${escapedTitle}'!${range}`;
+}
+
+async function ensureAccessToken() {
+    if (!accessToken) {
+        await getAccessToken();
+    }
+
+    if (!accessToken) {
+        throw new Error('Failed to obtain access token');
+    }
+}
+
+async function fetchSheetValues(range, retryCount = 0) {
+    await ensureAccessToken();
+
+    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    if (!response.ok) {
+        if (response.status === 401 && retryCount < 1) {
+            accessToken = null;
+            await getAccessToken();
+            return fetchSheetValues(range, retryCount + 1);
+        }
+
+        const errorText = await response.text();
+        throw new Error(`Failed to fetch sheet values: ${response.status} ${errorText}`);
+    }
+
+    return response.json();
+}
+
+async function updateSheetValues(range, values, retryCount = 0) {
+    await ensureAccessToken();
+
+    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {
+        method: 'PUT',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ values })
+    });
+
+    if (!response.ok) {
+        if (response.status === 401 && retryCount < 1) {
+            accessToken = null;
+            await getAccessToken();
+            return updateSheetValues(range, values, retryCount + 1);
+        }
+
+        const errorText = await response.text();
+        throw new Error(`Failed to update sheet values: ${response.status} ${errorText}`);
+    }
+
+    return response.json();
+}
+
+async function getAppConfigFromSheet() {
+    await ensureSheetExists(SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
+
+    const range = getSheetRange(APP_CONFIG_SHEET_TITLE, 'A:C');
+    const result = await fetchSheetValues(range);
+    const rows = result.values || [];
+    const configRow = rows.find(row => row[0] === 'config');
+
+    if (!configRow || !configRow[1]) {
+        return null;
+    }
+
+    return {
+        config: JSON.parse(configRow[1]),
+        updatedAt: configRow[2] || ''
+    };
+}
+
+async function saveAppConfigToSheet(config) {
+    await ensureSheetExists(SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
+
+    const updatedAt = new Date().toISOString();
+    const values = [
+        ['key', 'json', 'updatedAt'],
+        ['config', JSON.stringify(config), updatedAt]
+    ];
+
+    await updateSheetValues(getSheetRange(APP_CONFIG_SHEET_TITLE, 'A1:C2'), values);
+    return { updatedAt };
+}
+
 // Save prescription data to Google Sheets, including PDF URL
 async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount = 0, maxRetries = 3, baseDelay = 1000) {
     try {
@@ -526,7 +622,10 @@ function revokeAccess() {
 
 // Export functions
 window.initGoogleAPI = initGoogleAPI;
+window.getAccessToken = getAccessToken;
 window.savePrescriptionToSheet = savePrescriptionToSheet;
 window.uploadPdfToDrive = uploadPdfToDrive;
+window.getAppConfigFromSheet = getAppConfigFromSheet;
+window.saveAppConfigToSheet = saveAppConfigToSheet;
 window.revokeAccess = revokeAccess; 
 window.clearGoogleAccessToken = clearGoogleAccessToken;

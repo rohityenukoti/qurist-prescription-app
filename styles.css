@@ -76,6 +76,7 @@ body {
     display: flex;
     justify-content: flex-end;
     align-items: center;
+    gap: 10px;
     margin-bottom: 20px;
 }
 
@@ -95,6 +96,29 @@ body {
 
 #logoutBtn:hover {
     background-color: #c0392b;
+}
+
+#adminModeBtn {
+    background-color: #8e44ad;
+    color: white;
+    padding: 5px 10px;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+#adminModeBtn:hover {
+    background-color: #703688;
+}
+
+.config-status {
+    display: none;
+    margin-bottom: 15px;
+    padding: 8px 10px;
+    border-radius: 4px;
+    background-color: #eef6ff;
+    border: 1px solid #cfe5ff;
+    color: #2c3e50;
+    font-size: 13px;
 }
 
 /* Add a pseudo-element for the background pattern with opacity */
@@ -189,6 +213,94 @@ h2 {
 
 .form-section {
     margin-bottom: 30px;
+}
+
+.admin-panel {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #fbfbff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.admin-header h2 {
+    margin-bottom: 5px;
+}
+
+.admin-header p,
+.admin-panel small {
+    color: #666;
+}
+
+.admin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px;
+}
+
+.admin-wide {
+    grid-column: 1 / -1;
+}
+
+.admin-panel textarea {
+    min-height: 110px;
+    resize: vertical;
+    overflow: auto;
+}
+
+.admin-message {
+    display: none;
+    margin-bottom: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.admin-message.success {
+    display: block;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    color: #155724;
+}
+
+.admin-message.error {
+    display: block;
+    background-color: #ffecec;
+    border: 1px solid #f5c6cb;
+    color: #e74c3c;
+}
+
+.admin-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+#saveAdminConfigBtn {
+    background-color: #2ecc71;
+    color: white;
+}
+
+#saveAdminConfigBtn:hover {
+    background-color: #27ae60;
+}
+
+button.secondary {
+    background-color: #bdc3c7;
+    color: #2c3e50;
+}
+
+button.secondary:hover {
+    background-color: #aeb6bf;
 }
 
 .form-group {
@@ -454,6 +566,18 @@ button[type="reset"]:hover {
     display: flex;
     gap: 10px;
     justify-content: center;
+}
+
+@media (max-width: 760px) {
+    .admin-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-header,
+    .admin-actions,
+    .form-actions {
+        flex-direction: column;
+    }
 }
 
 #copyLinkBtn {
