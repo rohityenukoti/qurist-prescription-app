@@ -96,13 +96,11 @@ function normalizeOilDosageValues(config) {
     };
 
     config.dosageOptions.oil = config.dosageOptions.oil.map(dosage => {
-        const displayText = dosage.display || dosage.value || '';
+        const displayText = dosage.value || '';
         const normalizedKey = displayText.toLowerCase().replace(/\s+/g, '');
-        const display = canonicalOilDosages[normalizedKey] || displayText;
+        const value = canonicalOilDosages[normalizedKey] || displayText;
         return {
-            ...dosage,
-            display,
-            value: display
+            value
         };
     });
 
@@ -263,19 +261,13 @@ function serializeLines(values) {
 }
 
 function parseDosageLines(value) {
-    return parseLines(value).map(line => {
-        const parts = line.split('|').map(part => part.trim());
-        const display = parts[0] || '';
-        return {
-            display,
-            value: parts[1] || display
-        };
-    });
+    return parseLines(value).map(line => ({ value: line }));
 }
 
 function serializeDosageLines(values) {
     return (values || [])
-        .map(dosage => `${dosage.display || dosage.value}${dosage.value && dosage.value !== dosage.display ? ` | ${dosage.value}` : ''}`)
+        .map(dosage => dosage.value || '')
+        .filter(Boolean)
         .join('\n');
 }
 
@@ -364,17 +356,12 @@ function createAdminLineOptionRow(value = '', editor = {}) {
 
 function createAdminDosageOptionRow(dosage = {}) {
     const row = document.createElement('div');
-    row.className = 'admin-option-row admin-option-row-two';
+    row.className = 'admin-option-row';
 
     row.appendChild(createAdminOptionCell('input', {
-        name: 'display',
-        placeholder: 'Display text',
-        value: dosage.display || dosage.value || ''
-    }));
-    row.appendChild(createAdminOptionCell('input', {
         name: 'value',
-        placeholder: 'Saved value',
-        value: dosage.value || dosage.display || ''
+        placeholder: 'Dosage option',
+        value: dosage.value || ''
     }));
     row.appendChild(createAdminRemoveOptionButton());
     return row;
@@ -480,9 +467,7 @@ function syncAdminOptionEditorToTextarea(id) {
     } else if (editor.type === 'dosages') {
         value = rows
             .map(row => {
-                const display = row.querySelector('[data-field="display"]')?.value.trim() || '';
-                const savedValue = row.querySelector('[data-field="value"]')?.value.trim() || '';
-                return display || savedValue ? `${display || savedValue}${savedValue && savedValue !== display ? ` | ${savedValue}` : ''}` : '';
+                return row.querySelector('[data-field="value"]')?.value.trim() || '';
             })
             .filter(Boolean)
             .join('\n');
@@ -703,8 +688,8 @@ function validateAdminConfig(config) {
             errors.push(`Add at least one ${type} dosage option.`);
         }
         config.dosageOptions[type].forEach((dosage, index) => {
-            if (!dosage.display || !dosage.value) {
-                errors.push(`${type} dosage row ${index + 1} must include display text.`);
+            if (!dosage.value) {
+                errors.push(`${type} dosage row ${index + 1} must include dosage text.`);
             }
         });
     });
@@ -954,9 +939,8 @@ function updateDosageOptions(medicationSelect) {
     dosageSelect.innerHTML = '<option value="">Select Dosage</option>';
 
     getDosageOptionsForMedication(selectedMed).forEach(dosage => {
-        const value = dosage.value || dosage.display;
-        const display = dosage.display || dosage.value;
-        const option = new Option(display, value);
+        const value = dosage.value;
+        const option = new Option(value, value);
         dosageSelect.add(option);
     });
 

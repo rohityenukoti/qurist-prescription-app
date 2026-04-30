@@ -309,10 +309,6 @@ h2 {
     align-items: center;
 }
 
-.admin-option-row-two {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
-}
-
 .admin-option-row-medication {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 110px auto;
 }
@@ -662,7 +658,6 @@ button[type="reset"]:hover {
     }
 
     .admin-option-row,
-    .admin-option-row-two,
     .admin-option-row-medication {
         grid-template-columns: 1fr;
     }

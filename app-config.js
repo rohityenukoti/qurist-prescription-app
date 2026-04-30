@@ -71,18 +71,18 @@
         ],
         dosageOptions: {
             oil: [
-                { value: '0.25ml (1/4 ml)', display: '0.25ml (1/4 ml)' },
-                { value: '0.5ml (1/2 ml)', display: '0.5ml (1/2 ml)' },
-                { value: '0.75ml (3/4 ml)', display: '0.75ml (3/4 ml)' },
-                { value: '1ml', display: '1ml' }
+                { value: '0.25ml (1/4 ml)' },
+                { value: '0.5ml (1/2 ml)' },
+                { value: '0.75ml (3/4 ml)' },
+                { value: '1ml' }
             ],
             pills: [
-                { value: '1 capsule', display: '1 capsule' }
+                { value: '1 capsule' }
             ],
             gummies: [
-                { value: '1/4 gummy', display: '1/4 gummy' },
-                { value: '1/2 gummy', display: '1/2 gummy' },
-                { value: '1 gummy', display: '1 gummy' }
+                { value: '1/4 gummy' },
+                { value: '1/2 gummy' },
+                { value: '1 gummy' }
             ],
             other: []
         },
