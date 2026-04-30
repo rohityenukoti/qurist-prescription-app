@@ -38,41 +38,6 @@ const ADMIN_OPTION_EDITORS = {
         singularLabel: 'gummy dosage',
         pluralLabel: 'gummy dosages',
         addLabel: 'Add gummy dosage'
-    },
-    adminOilInstructions: {
-        type: 'lines',
-        singularLabel: 'oil instruction',
-        pluralLabel: 'oil instructions',
-        addLabel: 'Add oil instruction',
-        placeholder: 'Oil instruction'
-    },
-    adminOtherInstructions: {
-        type: 'lines',
-        singularLabel: 'pill/gummy instruction',
-        pluralLabel: 'pill/gummy instructions',
-        addLabel: 'Add pill/gummy instruction',
-        placeholder: 'Pill/gummy instruction'
-    },
-    adminBaseNotes: {
-        type: 'lines',
-        singularLabel: 'default instruction',
-        pluralLabel: 'default instructions',
-        addLabel: 'Add instruction',
-        placeholder: 'Additional instruction'
-    },
-    adminOilNotes: {
-        type: 'lines',
-        singularLabel: 'oil note',
-        pluralLabel: 'oil notes',
-        addLabel: 'Add oil note',
-        placeholder: 'Oil-specific note'
-    },
-    adminPillGummyNotes: {
-        type: 'lines',
-        singularLabel: 'pill/gummy note',
-        pluralLabel: 'pill/gummy notes',
-        addLabel: 'Add pill/gummy note',
-        placeholder: 'Pill/gummy-specific note'
     }
 };
 
