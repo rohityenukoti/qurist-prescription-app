@@ -7,6 +7,75 @@ let appConfig = window.mergeQuristConfig ? window.mergeQuristConfig() : {};
 let appConfigMeta = { source: 'defaults', updatedAt: '' };
 let medicationCounter = 1;
 
+const ADMIN_OPTION_EDITORS = {
+    adminComplaints: {
+        type: 'lines',
+        singularLabel: 'complaint option',
+        pluralLabel: 'complaint options',
+        addLabel: 'Add complaint',
+        placeholder: 'Complaint option'
+    },
+    adminMedications: {
+        type: 'medications',
+        singularLabel: 'medication',
+        pluralLabel: 'medications',
+        addLabel: 'Add medication'
+    },
+    adminOilDosages: {
+        type: 'dosages',
+        singularLabel: 'oil dosage',
+        pluralLabel: 'oil dosages',
+        addLabel: 'Add oil dosage'
+    },
+    adminPillDosages: {
+        type: 'dosages',
+        singularLabel: 'pill dosage',
+        pluralLabel: 'pill dosages',
+        addLabel: 'Add pill dosage'
+    },
+    adminGummyDosages: {
+        type: 'dosages',
+        singularLabel: 'gummy dosage',
+        pluralLabel: 'gummy dosages',
+        addLabel: 'Add gummy dosage'
+    },
+    adminOilInstructions: {
+        type: 'lines',
+        singularLabel: 'oil instruction',
+        pluralLabel: 'oil instructions',
+        addLabel: 'Add oil instruction',
+        placeholder: 'Oil instruction'
+    },
+    adminOtherInstructions: {
+        type: 'lines',
+        singularLabel: 'pill/gummy instruction',
+        pluralLabel: 'pill/gummy instructions',
+        addLabel: 'Add pill/gummy instruction',
+        placeholder: 'Pill/gummy instruction'
+    },
+    adminBaseNotes: {
+        type: 'lines',
+        singularLabel: 'default instruction',
+        pluralLabel: 'default instructions',
+        addLabel: 'Add instruction',
+        placeholder: 'Additional instruction'
+    },
+    adminOilNotes: {
+        type: 'lines',
+        singularLabel: 'oil note',
+        pluralLabel: 'oil notes',
+        addLabel: 'Add oil note',
+        placeholder: 'Oil-specific note'
+    },
+    adminPillGummyNotes: {
+        type: 'lines',
+        singularLabel: 'pill/gummy note',
+        pluralLabel: 'pill/gummy notes',
+        addLabel: 'Add pill/gummy note',
+        placeholder: 'Pill/gummy-specific note'
+    }
+};
+
 function isEmailAllowed(email, allowedEmails) {
     return allowedEmails.some(
         allowed => allowed.toLowerCase() === email ||
@@ -221,6 +290,299 @@ function serializeMedicationLines(values) {
         .join('\n');
 }
 
+function createAdminOptionCell(tagName = 'input', options = {}) {
+    const cell = document.createElement(tagName);
+    cell.className = 'admin-option-cell';
+    if (tagName === 'input') {
+        cell.type = 'text';
+    }
+    if (options.placeholder) {
+        cell.placeholder = options.placeholder;
+    }
+    if (options.value) {
+        cell.value = options.value;
+    }
+    if (options.name) {
+        cell.dataset.field = options.name;
+    }
+    return cell;
+}
+
+function getAdminOptionData(id) {
+    const editor = ADMIN_OPTION_EDITORS[id];
+    const value = getElementValue(id);
+
+    if (!editor) {
+        return [];
+    }
+    if (editor.type === 'medications') {
+        return parseMedicationLines(value);
+    }
+    if (editor.type === 'dosages') {
+        return parseDosageLines(value);
+    }
+    return parseLines(value);
+}
+
+function getAdminOptionCount(id) {
+    return getAdminOptionData(id).length;
+}
+
+function updateAdminOptionSummary(id) {
+    const editor = ADMIN_OPTION_EDITORS[id];
+    const shell = document.querySelector(`[data-admin-option-editor="${id}"]`);
+    const summary = shell ? shell.querySelector('.admin-option-summary') : null;
+    if (!editor || !summary) {
+        return;
+    }
+
+    const count = getAdminOptionCount(id);
+    const label = count === 1 ? editor.singularLabel : editor.pluralLabel;
+    summary.textContent = `${count} ${label}`;
+}
+
+function createAdminLineOptionRow(value = '', editor = {}) {
+    const row = document.createElement('div');
+    row.className = 'admin-option-row';
+
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'value',
+        placeholder: editor.placeholder || 'Option',
+        value
+    }));
+    row.appendChild(createAdminRemoveOptionButton());
+    return row;
+}
+
+function createAdminDosageOptionRow(dosage = {}) {
+    const row = document.createElement('div');
+    row.className = 'admin-option-row admin-option-row-two';
+
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'display',
+        placeholder: 'Display text',
+        value: dosage.display || dosage.value || ''
+    }));
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'value',
+        placeholder: 'Saved value',
+        value: dosage.value || dosage.display || ''
+    }));
+    row.appendChild(createAdminRemoveOptionButton());
+    return row;
+}
+
+function createAdminMedicationOptionRow(medication = {}) {
+    const row = document.createElement('div');
+    row.className = 'admin-option-row admin-option-row-medication';
+
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'label',
+        placeholder: 'Dropdown name',
+        value: medication.label || medication.id || ''
+    }));
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'pdfName',
+        placeholder: 'PDF name',
+        value: medication.pdfName || medication.label || medication.id || ''
+    }));
+
+    const typeSelect = createAdminOptionCell('select', { name: 'type' });
+    ['oil', 'pills', 'gummies', 'other'].forEach(type => {
+        typeSelect.add(new Option(type, type));
+    });
+    typeSelect.value = medication.type || 'other';
+    row.appendChild(typeSelect);
+    row.appendChild(createAdminRemoveOptionButton());
+    return row;
+}
+
+function createAdminRemoveOptionButton() {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'admin-remove-option-btn secondary';
+    button.textContent = 'Remove';
+    return button;
+}
+
+function createEmptyAdminOptionRow(id) {
+    const editor = ADMIN_OPTION_EDITORS[id];
+    if (!editor) {
+        return document.createElement('div');
+    }
+    if (editor.type === 'medications') {
+        return createAdminMedicationOptionRow();
+    }
+    if (editor.type === 'dosages') {
+        return createAdminDosageOptionRow();
+    }
+    return createAdminLineOptionRow('', editor);
+}
+
+function renderAdminOptionEditorRows(id) {
+    const editor = ADMIN_OPTION_EDITORS[id];
+    const shell = document.querySelector(`[data-admin-option-editor="${id}"]`);
+    const rowsContainer = shell ? shell.querySelector('.admin-option-rows') : null;
+    if (!editor || !rowsContainer) {
+        return;
+    }
+
+    rowsContainer.innerHTML = '';
+    const data = getAdminOptionData(id);
+    data.forEach(item => {
+        if (editor.type === 'medications') {
+            rowsContainer.appendChild(createAdminMedicationOptionRow(item));
+        } else if (editor.type === 'dosages') {
+            rowsContainer.appendChild(createAdminDosageOptionRow(item));
+        } else {
+            rowsContainer.appendChild(createAdminLineOptionRow(item, editor));
+        }
+    });
+
+    if (!data.length) {
+        const emptyState = document.createElement('p');
+        emptyState.className = 'admin-option-empty';
+        emptyState.textContent = 'No options yet. Use the add button below to create one.';
+        rowsContainer.appendChild(emptyState);
+    }
+
+    updateAdminOptionSummary(id);
+}
+
+function syncAdminOptionEditorToTextarea(id) {
+    const editor = ADMIN_OPTION_EDITORS[id];
+    const textarea = document.getElementById(id);
+    const shell = document.querySelector(`[data-admin-option-editor="${id}"]`);
+    const rows = shell ? Array.from(shell.querySelectorAll('.admin-option-row')) : [];
+    if (!editor || !textarea || !shell) {
+        return;
+    }
+
+    let value = '';
+    if (editor.type === 'medications') {
+        value = rows
+            .map(row => {
+                const label = row.querySelector('[data-field="label"]')?.value.trim() || '';
+                const pdfName = row.querySelector('[data-field="pdfName"]')?.value.trim() || '';
+                const type = row.querySelector('[data-field="type"]')?.value || 'other';
+                return label || pdfName ? `${label} | ${pdfName || label} | ${type}` : '';
+            })
+            .filter(Boolean)
+            .join('\n');
+    } else if (editor.type === 'dosages') {
+        value = rows
+            .map(row => {
+                const display = row.querySelector('[data-field="display"]')?.value.trim() || '';
+                const savedValue = row.querySelector('[data-field="value"]')?.value.trim() || '';
+                return display || savedValue ? `${display || savedValue}${savedValue && savedValue !== display ? ` | ${savedValue}` : ''}` : '';
+            })
+            .filter(Boolean)
+            .join('\n');
+    } else {
+        value = rows
+            .map(row => row.querySelector('[data-field="value"]')?.value.trim() || '')
+            .filter(Boolean)
+            .join('\n');
+    }
+
+    textarea.value = value;
+    updateAdminOptionSummary(id);
+}
+
+function syncAllAdminOptionEditors() {
+    Object.keys(ADMIN_OPTION_EDITORS).forEach(syncAdminOptionEditorToTextarea);
+}
+
+function renderAllAdminOptionEditors() {
+    Object.keys(ADMIN_OPTION_EDITORS).forEach(renderAdminOptionEditorRows);
+}
+
+function initializeAdminOptionEditors() {
+    Object.entries(ADMIN_OPTION_EDITORS).forEach(([id, editor]) => {
+        const textarea = document.getElementById(id);
+        const formGroup = textarea ? textarea.closest('.form-group') : null;
+        if (!textarea || !formGroup || formGroup.dataset.adminOptionInitialized === 'true') {
+            return;
+        }
+
+        formGroup.dataset.adminOptionInitialized = 'true';
+        textarea.classList.add('admin-backing-field');
+
+        const shell = document.createElement('div');
+        shell.className = 'admin-option-editor';
+        shell.dataset.adminOptionEditor = id;
+        shell.innerHTML = `
+            <div class="admin-option-editor-bar">
+                <span class="admin-option-summary"></span>
+                <button type="button" class="admin-option-toggle secondary">Edit</button>
+            </div>
+            <div class="admin-option-panel" hidden>
+                <div class="admin-option-rows"></div>
+                <button type="button" class="admin-add-option-btn secondary">${editor.addLabel}</button>
+            </div>
+        `;
+
+        formGroup.appendChild(shell);
+
+        const toggleButton = shell.querySelector('.admin-option-toggle');
+        const panel = shell.querySelector('.admin-option-panel');
+        const rowsContainer = shell.querySelector('.admin-option-rows');
+        const addButton = shell.querySelector('.admin-add-option-btn');
+
+        toggleButton.addEventListener('click', function() {
+            if (panel.hidden) {
+                renderAdminOptionEditorRows(id);
+                panel.hidden = false;
+                this.textContent = 'Done';
+                const firstCell = rowsContainer.querySelector('.admin-option-cell');
+                if (firstCell) {
+                    firstCell.focus();
+                }
+            } else {
+                syncAdminOptionEditorToTextarea(id);
+                panel.hidden = true;
+                this.textContent = 'Edit';
+            }
+        });
+
+        addButton.addEventListener('click', function() {
+            const emptyState = rowsContainer.querySelector('.admin-option-empty');
+            if (emptyState) {
+                emptyState.remove();
+            }
+            const row = createEmptyAdminOptionRow(id);
+            rowsContainer.appendChild(row);
+            syncAdminOptionEditorToTextarea(id);
+            const firstCell = row.querySelector('.admin-option-cell');
+            if (firstCell) {
+                firstCell.focus();
+            }
+        });
+
+        rowsContainer.addEventListener('input', function() {
+            syncAdminOptionEditorToTextarea(id);
+        });
+        rowsContainer.addEventListener('change', function() {
+            syncAdminOptionEditorToTextarea(id);
+        });
+        rowsContainer.addEventListener('click', function(event) {
+            if (!event.target.classList.contains('admin-remove-option-btn')) {
+                return;
+            }
+            event.target.closest('.admin-option-row').remove();
+            if (!rowsContainer.querySelector('.admin-option-row')) {
+                const emptyState = document.createElement('p');
+                emptyState.className = 'admin-option-empty';
+                emptyState.textContent = 'No options yet. Use the add button below to create one.';
+                rowsContainer.appendChild(emptyState);
+            }
+            syncAdminOptionEditorToTextarea(id);
+        });
+
+        renderAdminOptionEditorRows(id);
+    });
+}
+
 function parseFooter(value) {
     const parts = String(value || '').split('|').map(part => part.trim());
     return {
@@ -262,9 +624,11 @@ function populateAdminForm(config = appConfig) {
     setElementValue('adminOccupationalSafety', config.pdfText.occupationalSafetyAdvisory);
     setElementValue('adminPatientAgreement', config.pdfText.patientAgreement);
     setElementValue('adminContactInformation', config.pdfText.contactInformation);
+    renderAllAdminOptionEditors();
 }
 
 function buildConfigFromAdminForm() {
+    syncAllAdminOptionEditors();
     const currentDefaults = window.cloneQuristConfig ? window.cloneQuristConfig(window.QURIST_DEFAULT_APP_CONFIG) : {};
     return {
         version: 1,
@@ -1053,6 +1417,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+    initializeAdminOptionEditors();
     updateAdminVisibility();
     updateAdminStatus();
     

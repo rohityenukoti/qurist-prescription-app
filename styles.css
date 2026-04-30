@@ -256,6 +256,88 @@ h2 {
     overflow: auto;
 }
 
+.admin-backing-field {
+    display: none;
+}
+
+.admin-option-editor {
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    background-color: #ffffff;
+    overflow: hidden;
+}
+
+.admin-option-editor-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+}
+
+.admin-option-summary {
+    color: #2c3e50;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+.admin-option-toggle,
+.admin-add-option-btn,
+.admin-remove-option-btn {
+    padding: 7px 10px;
+    font-size: 13px;
+    border-radius: 4px;
+}
+
+.admin-option-panel {
+    border-top: 1px solid #eef2f7;
+    padding: 10px;
+    background-color: #f8fafc;
+}
+
+.admin-option-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.admin-option-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+}
+
+.admin-option-row-two {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
+.admin-option-row-medication {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 110px auto;
+}
+
+.admin-option-cell {
+    background-color: #ffffff;
+    font-size: 14px;
+    padding: 8px;
+}
+
+.admin-remove-option-btn {
+    background-color: #e74c3c;
+    color: #ffffff;
+}
+
+.admin-remove-option-btn:hover {
+    background-color: #c0392b;
+}
+
+.admin-option-empty {
+    color: #666;
+    font-size: 14px;
+    margin: 4px 0;
+}
+
 .admin-message {
     display: none;
     margin-bottom: 15px;
@@ -577,6 +659,12 @@ button[type="reset"]:hover {
     .admin-actions,
     .form-actions {
         flex-direction: column;
+    }
+
+    .admin-option-row,
+    .admin-option-row-two,
+    .admin-option-row-medication {
+        grid-template-columns: 1fr;
     }
 }
 
