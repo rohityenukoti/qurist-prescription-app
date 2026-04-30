@@ -71,10 +71,10 @@
         ],
         dosageOptions: {
             oil: [
-                { value: '0.25 ml', display: '0.25 ml (1/4 ml)' },
-                { value: '0.5 ml', display: '0.5 ml (1/2 ml)' },
-                { value: '0.75 ml', display: '0.75 ml (3/4 ml)' },
-                { value: '1 ml', display: '1 ml' }
+                { value: '0.25ml (1/4 ml)', display: '0.25ml (1/4 ml)' },
+                { value: '0.5ml (1/2 ml)', display: '0.5ml (1/2 ml)' },
+                { value: '0.75ml (3/4 ml)', display: '0.75ml (3/4 ml)' },
+                { value: '1ml', display: '1ml' }
             ],
             pills: [
                 { value: '1 capsule', display: '1 capsule' }

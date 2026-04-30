@@ -3,7 +3,7 @@ let currentUser = null;
 const ALLOWED_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in'];
 const ADMIN_EMAILS = ['rohit@qurist.in'];
 const CONFIG_CACHE_KEY = 'quristAppConfig';
-let appConfig = window.mergeQuristConfig ? window.mergeQuristConfig() : {};
+let appConfig = normalizeOilDosageValues(window.mergeQuristConfig ? window.mergeQuristConfig() : {});
 let appConfigMeta = { source: 'defaults', updatedAt: '' };
 let medicationCounter = 1;
 
@@ -80,8 +80,37 @@ function setCachedConfig(config, updatedAt = '') {
     }
 }
 
+function normalizeOilDosageValues(config) {
+    if (!config || !config.dosageOptions || !Array.isArray(config.dosageOptions.oil)) {
+        return config;
+    }
+
+    const canonicalOilDosages = {
+        '0.25ml': '0.25ml (1/4 ml)',
+        '0.25ml(1/4ml)': '0.25ml (1/4 ml)',
+        '0.5ml': '0.5ml (1/2 ml)',
+        '0.5ml(1/2ml)': '0.5ml (1/2 ml)',
+        '0.75ml': '0.75ml (3/4 ml)',
+        '0.75ml(3/4ml)': '0.75ml (3/4 ml)',
+        '1ml': '1ml'
+    };
+
+    config.dosageOptions.oil = config.dosageOptions.oil.map(dosage => {
+        const displayText = dosage.display || dosage.value || '';
+        const normalizedKey = displayText.toLowerCase().replace(/\s+/g, '');
+        const display = canonicalOilDosages[normalizedKey] || displayText;
+        return {
+            ...dosage,
+            display,
+            value: display
+        };
+    });
+
+    return config;
+}
+
 function applyAppConfig(config, meta = {}) {
-    appConfig = window.mergeQuristConfig ? window.mergeQuristConfig(config) : config;
+    appConfig = normalizeOilDosageValues(window.mergeQuristConfig ? window.mergeQuristConfig(config) : config);
     appConfigMeta = {
         source: meta.source || 'defaults',
         updatedAt: meta.updatedAt || ''
@@ -609,7 +638,7 @@ function populateAdminForm(config = appConfig) {
 function buildConfigFromAdminForm() {
     syncAllAdminOptionEditors();
     const currentDefaults = window.cloneQuristConfig ? window.cloneQuristConfig(window.QURIST_DEFAULT_APP_CONFIG) : {};
-    return {
+    const config = {
         version: 1,
         complaints: parseLines(getElementValue('adminComplaints')),
         medications: parseMedicationLines(getElementValue('adminMedications')),
@@ -639,6 +668,8 @@ function buildConfigFromAdminForm() {
         },
         footer: parseFooter(getElementValue('adminFooter'))
     };
+
+    return normalizeOilDosageValues(config);
 }
 
 function validateAdminConfig(config) {
