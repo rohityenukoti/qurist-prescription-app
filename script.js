@@ -38,6 +38,20 @@ const ADMIN_OPTION_EDITORS = {
         singularLabel: 'gummy dosage',
         pluralLabel: 'gummy dosages',
         addLabel: 'Add gummy dosage'
+    },
+    adminOilInstructions: {
+        type: 'lines',
+        singularLabel: 'oil instruction',
+        pluralLabel: 'oil instructions',
+        addLabel: 'Add oil instruction',
+        placeholder: 'Oil instruction'
+    },
+    adminOtherInstructions: {
+        type: 'lines',
+        singularLabel: 'pill/gummy instruction',
+        pluralLabel: 'pill/gummy instructions',
+        addLabel: 'Add pill/gummy instruction',
+        placeholder: 'Pill/gummy instruction'
     }
 };
 
