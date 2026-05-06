@@ -4,6 +4,12 @@
 const SPREADSHEET_ID = '1X0cIuwzusx1PNNHcyFeLunnZ9Y7x-d9BCdT0PAhQ_PU';
 const API_KEY = 'AIzaSyCpijuiQAj27q6FIVQF9AMv7aiGL8R2iiI';
 const CLIENT_ID = '135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleusercontent.com';
+const APP_CONFIG_SPREADSHEET_ID = '1uBGaUf0SCkcaLTomxyzeBWn1OEBsmqHTMM3G7LSmAo0';
+const PRESCRIPTION_SPREADSHEET_FOLDER_ID = '1FAEg1SG72DoDbBDgCNe1iQO4R3EWV6Iz';
+const PRESCRIPTION_SPREADSHEET_TITLE_PREFIX = 'Prescription data';
+const PRESCRIPTION_SPREADSHEET_IDS_BY_YEAR = {
+    2026: SPREADSHEET_ID
+};
 // IDs of folders in Google Drive where PDFs will be stored, by doctor
 const DRIVE_FOLDER_IDS = { 
     dr_rohit: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P',
@@ -16,6 +22,7 @@ const APP_CONFIG_SHEET_TITLE = 'App Config';
 
 let tokenClient;
 let accessToken = null;
+const prescriptionSpreadsheetIdCache = { ...PRESCRIPTION_SPREADSHEET_IDS_BY_YEAR };
 
 // Expose a safe way for other scripts to clear the in-scope token.
 // (Note: `let accessToken` is not the same as `window.accessToken`.)
@@ -347,6 +354,99 @@ function getMonthlySheetTitle(dateString) {
     return monthTitle;
 }
 
+function getPrescriptionYear(dateString) {
+    let dateObject = new Date(dateString);
+    if (isNaN(dateObject.getTime())) {
+        dateObject = new Date();
+    }
+
+    return dateObject.getFullYear();
+}
+
+function getPrescriptionSpreadsheetTitle(year) {
+    return `${PRESCRIPTION_SPREADSHEET_TITLE_PREFIX} ${year}`;
+}
+
+function escapeDriveQueryValue(value) {
+    return String(value).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+}
+
+async function findPrescriptionSpreadsheetByTitle(title, retryCount = 0) {
+    await ensureAccessToken();
+
+    const query = [
+        `'${escapeDriveQueryValue(PRESCRIPTION_SPREADSHEET_FOLDER_ID)}' in parents`,
+        `name = '${escapeDriveQueryValue(title)}'`,
+        "mimeType = 'application/vnd.google-apps.spreadsheet'",
+        'trashed = false'
+    ].join(' and ');
+
+    const response = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id%2Cname)&spaces=drive`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    if (!response.ok) {
+        if (response.status === 401 && retryCount < 1) {
+            accessToken = null;
+            await getAccessToken();
+            return findPrescriptionSpreadsheetByTitle(title, retryCount + 1);
+        }
+
+        const errorText = await response.text();
+        throw new Error(`Failed to find prescription spreadsheet '${title}': ${response.status} ${errorText}`);
+    }
+
+    const result = await response.json();
+    return (result.files || [])[0] || null;
+}
+
+async function createPrescriptionSpreadsheet(title, retryCount = 0) {
+    await ensureAccessToken();
+
+    const response = await fetch('https://www.googleapis.com/drive/v3/files?fields=id%2Cname', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            name: title,
+            mimeType: 'application/vnd.google-apps.spreadsheet',
+            parents: [PRESCRIPTION_SPREADSHEET_FOLDER_ID]
+        })
+    });
+
+    if (!response.ok) {
+        if (response.status === 401 && retryCount < 1) {
+            accessToken = null;
+            await getAccessToken();
+            return createPrescriptionSpreadsheet(title, retryCount + 1);
+        }
+
+        const errorText = await response.text();
+        throw new Error(`Failed to create prescription spreadsheet '${title}': ${response.status} ${errorText}`);
+    }
+
+    return response.json();
+}
+
+async function getPrescriptionSpreadsheetId(dateString) {
+    const year = getPrescriptionYear(dateString);
+
+    if (prescriptionSpreadsheetIdCache[year]) {
+        return prescriptionSpreadsheetIdCache[year];
+    }
+
+    const title = getPrescriptionSpreadsheetTitle(year);
+    const existingSpreadsheet = await findPrescriptionSpreadsheetByTitle(title);
+    const spreadsheet = existingSpreadsheet || await createPrescriptionSpreadsheet(title);
+
+    prescriptionSpreadsheetIdCache[year] = spreadsheet.id;
+    return spreadsheet.id;
+}
+
 async function ensureSheetExists(spreadsheetId, sheetTitle, retryCount = 0) {
     // Ensure we have an access token
     if (!accessToken) {
@@ -426,10 +526,10 @@ async function ensureAccessToken() {
     }
 }
 
-async function fetchSheetValues(range, retryCount = 0) {
+async function fetchSheetValues(spreadsheetId, range, retryCount = 0) {
     await ensureAccessToken();
 
-    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}`, {
+    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}`, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
         }
@@ -439,7 +539,7 @@ async function fetchSheetValues(range, retryCount = 0) {
         if (response.status === 401 && retryCount < 1) {
             accessToken = null;
             await getAccessToken();
-            return fetchSheetValues(range, retryCount + 1);
+            return fetchSheetValues(spreadsheetId, range, retryCount + 1);
         }
 
         const errorText = await response.text();
@@ -449,10 +549,10 @@ async function fetchSheetValues(range, retryCount = 0) {
     return response.json();
 }
 
-async function updateSheetValues(range, values, retryCount = 0) {
+async function updateSheetValues(spreadsheetId, range, values, retryCount = 0) {
     await ensureAccessToken();
 
-    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {
+    const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(range)}?valueInputOption=RAW`, {
         method: 'PUT',
         headers: {
             'Authorization': `Bearer ${accessToken}`,
@@ -465,7 +565,7 @@ async function updateSheetValues(range, values, retryCount = 0) {
         if (response.status === 401 && retryCount < 1) {
             accessToken = null;
             await getAccessToken();
-            return updateSheetValues(range, values, retryCount + 1);
+            return updateSheetValues(spreadsheetId, range, values, retryCount + 1);
         }
 
         const errorText = await response.text();
@@ -476,10 +576,10 @@ async function updateSheetValues(range, values, retryCount = 0) {
 }
 
 async function getAppConfigFromSheet() {
-    await ensureSheetExists(SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
+    await ensureSheetExists(APP_CONFIG_SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
 
     const range = getSheetRange(APP_CONFIG_SHEET_TITLE, 'A:C');
-    const result = await fetchSheetValues(range);
+    const result = await fetchSheetValues(APP_CONFIG_SPREADSHEET_ID, range);
     const rows = result.values || [];
     const configRow = rows.find(row => row[0] === 'config');
 
@@ -494,7 +594,7 @@ async function getAppConfigFromSheet() {
 }
 
 async function saveAppConfigToSheet(config) {
-    await ensureSheetExists(SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
+    await ensureSheetExists(APP_CONFIG_SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
 
     const updatedAt = new Date().toISOString();
     const values = [
@@ -502,7 +602,7 @@ async function saveAppConfigToSheet(config) {
         ['config', JSON.stringify(config), updatedAt]
     ];
 
-    await updateSheetValues(getSheetRange(APP_CONFIG_SHEET_TITLE, 'A1:C2'), values);
+    await updateSheetValues(APP_CONFIG_SPREADSHEET_ID, getSheetRange(APP_CONFIG_SHEET_TITLE, 'A1:C2'), values);
     return { updatedAt };
 }
 
@@ -521,9 +621,10 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount
             throw new Error('Failed to obtain access token');
         }
 
-        // Determine the monthly sheet title and ensure it exists
+        // Determine the yearly spreadsheet and monthly sheet title, then ensure the tab exists
+        const spreadsheetId = await getPrescriptionSpreadsheetId(prescriptionData.date);
         const sheetTitle = getMonthlySheetTitle(prescriptionData.date);
-        await ensureSheetExists(SPREADSHEET_ID, sheetTitle);
+        await ensureSheetExists(spreadsheetId, sheetTitle);
 
         // Format the data for Google Sheets, now including PDF URL
         const values = [
@@ -552,7 +653,7 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount
         console.log('Attempting to save data to Google Sheets...');
 
         // Append the data to the sheet using fetch API (expanded to include the PDF URL column)
-        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${encodeURIComponent(sheetTitle)}!A:Q:append?valueInputOption=RAW`, {
+        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetTitle)}!A:Q:append?valueInputOption=RAW`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
