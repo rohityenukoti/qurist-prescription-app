@@ -17,6 +17,7 @@ const DRIVE_FOLDER_IDS = {
     dr_parul: '1uPj2gdGEOMuFNHdVatYPjrjKniId5TG5'
 };
 const APP_CONFIG_SHEET_TITLE = 'App Config';
+const APP_CONFIG_CHUNK_SIZE = 40000;
 
 
 
@@ -194,8 +195,11 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
             throw new Error('Failed to obtain access token for Drive upload');
         }
 
-        // Get the correct folder ID based on the doctor
-        const folderId = DRIVE_FOLDER_IDS[doctorId] || DRIVE_FOLDER_IDS.dr_rohit;
+        // Get the correct folder ID based on the doctor.
+        const configuredFolderId = typeof window.getDoctorDriveFolderId === 'function'
+            ? window.getDoctorDriveFolderId(doctorId)
+            : '';
+        const folderId = configuredFolderId || DRIVE_FOLDER_IDS[doctorId] || DRIVE_FOLDER_IDS.dr_rohit;
         const folderUrl = `https://drive.google.com/drive/folders/${folderId}`;
 
         // Create form data for the file upload
@@ -581,6 +585,25 @@ async function getAppConfigFromSheet() {
     const range = getSheetRange(APP_CONFIG_SHEET_TITLE, 'A:C');
     const result = await fetchSheetValues(APP_CONFIG_SPREADSHEET_ID, range);
     const rows = result.values || [];
+    const chunkRows = rows.filter(row => /^config:\d+$/.test(row[0] || '') && row[1]);
+
+    if (chunkRows.length) {
+        const latestUpdatedAt = chunkRows
+            .map(row => row[2] || '')
+            .sort()
+            .pop() || '';
+        const configJson = chunkRows
+            .filter(row => (row[2] || '') === latestUpdatedAt)
+            .sort((a, b) => Number(a[0].split(':')[1]) - Number(b[0].split(':')[1]))
+            .map(row => row[1] || '')
+            .join('');
+
+        return {
+            config: JSON.parse(configJson),
+            updatedAt: latestUpdatedAt
+        };
+    }
+
     const configRow = rows.find(row => row[0] === 'config');
 
     if (!configRow || !configRow[1]) {
@@ -597,12 +620,14 @@ async function saveAppConfigToSheet(config) {
     await ensureSheetExists(APP_CONFIG_SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
 
     const updatedAt = new Date().toISOString();
+    const configJson = JSON.stringify(config);
+    const chunks = configJson.match(new RegExp(`.{1,${APP_CONFIG_CHUNK_SIZE}}`, 'g')) || [''];
     const values = [
         ['key', 'json', 'updatedAt'],
-        ['config', JSON.stringify(config), updatedAt]
+        ...chunks.map((chunk, index) => [`config:${index}`, chunk, updatedAt])
     ];
 
-    await updateSheetValues(APP_CONFIG_SPREADSHEET_ID, getSheetRange(APP_CONFIG_SHEET_TITLE, 'A1:C2'), values);
+    await updateSheetValues(APP_CONFIG_SPREADSHEET_ID, getSheetRange(APP_CONFIG_SHEET_TITLE, `A1:C${values.length}`), values);
     return { updatedAt };
 }
 

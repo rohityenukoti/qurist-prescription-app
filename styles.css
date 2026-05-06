@@ -313,10 +313,40 @@ h2 {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 110px auto;
 }
 
+.admin-option-row-doctor {
+    grid-template-columns: 100px minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 0.75fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+}
+
 .admin-option-cell {
     background-color: #ffffff;
     font-size: 14px;
     padding: 8px;
+}
+
+.admin-signature-upload {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.admin-signature-file {
+    font-size: 12px;
+    max-width: 100%;
+}
+
+.admin-signature-status {
+    color: #666;
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-clear-signature-btn {
+    align-self: flex-start;
+    padding: 4px 7px;
+    font-size: 12px;
 }
 
 .admin-remove-option-btn {

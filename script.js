@@ -21,6 +21,12 @@ const ADMIN_OPTION_EDITORS = {
         pluralLabel: 'medications',
         addLabel: 'Add medication'
     },
+    adminDoctors: {
+        type: 'doctors',
+        singularLabel: 'doctor',
+        pluralLabel: 'doctors',
+        addLabel: 'Add doctor'
+    },
     adminOilDosages: {
         type: 'dosages',
         singularLabel: 'oil dosage',
@@ -109,11 +115,15 @@ function normalizeOilDosageValues(config) {
 
 function applyAppConfig(config, meta = {}) {
     appConfig = normalizeOilDosageValues(window.mergeQuristConfig ? window.mergeQuristConfig(config) : config);
+    if (currentUser) {
+        currentUser.isDoctor = isEmailAllowed(currentUser.email, getConfiguredDoctorEmails());
+    }
     appConfigMeta = {
         source: meta.source || 'defaults',
         updatedAt: meta.updatedAt || ''
     };
     renderConfigDrivenFields();
+    updateAdminVisibility();
     updateAdminStatus();
 }
 
@@ -148,6 +158,57 @@ async function loadRemoteAppConfig(options = {}) {
 
 function getMedicationConfig(medicationId) {
     return (appConfig.medications || []).find(med => med.id === medicationId) || null;
+}
+
+function normalizeDoctorId(value) {
+    return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+}
+
+function getDoctorConfig(doctorId) {
+    return (appConfig.doctors || []).find(doctor => doctor.id === doctorId) || null;
+}
+
+function getConfiguredDoctorEmails() {
+    const configEmails = (appConfig.doctors || [])
+        .map(doctor => doctor.email)
+        .filter(Boolean);
+    return configEmails.length ? configEmails : ALLOWED_EMAILS;
+}
+
+function getDoctorForEmail(email) {
+    const normalizedEmail = String(email || '').toLowerCase();
+    return (appConfig.doctors || []).find(doctor => {
+        const doctorEmail = String(doctor.email || '').toLowerCase();
+        return doctorEmail && isEmailAllowed(normalizedEmail, [doctorEmail]);
+    }) || null;
+}
+
+function getDoctorDriveFolderId(doctorId) {
+    const doctor = getDoctorConfig(doctorId);
+    return doctor && doctor.driveFolderId ? doctor.driveFolderId : '';
+}
+
+function renderDoctorOptions() {
+    const doctorSelect = document.getElementById('doctorSelect');
+    if (!doctorSelect) {
+        return;
+    }
+
+    const selectedValue = doctorSelect.value;
+    doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+    (appConfig.doctors || []).forEach(doctor => {
+        addSelectOption(doctorSelect, doctor.id, doctor.name || doctor.id);
+    });
+
+    if (selectedValue && getDoctorConfig(selectedValue)) {
+        doctorSelect.value = selectedValue;
+    }
+
+    setDoctorSelectionForCurrentUser();
 }
 
 function getMedicationType(medicationId) {
@@ -230,6 +291,7 @@ function renderComplaintsChecklist() {
 }
 
 function renderConfigDrivenFields() {
+    renderDoctorOptions();
     renderComplaintsChecklist();
     renderAllMedicationOptions();
 }
@@ -290,6 +352,20 @@ function serializeMedicationLines(values) {
         .join('\n');
 }
 
+function parseDoctorJson(value) {
+    try {
+        const doctors = JSON.parse(value || '[]');
+        return Array.isArray(doctors) ? doctors : [];
+    } catch (error) {
+        console.warn('Unable to parse doctor setup:', error);
+        return [];
+    }
+}
+
+function serializeDoctorJson(values) {
+    return JSON.stringify(values || []);
+}
+
 function createAdminOptionCell(tagName = 'input', options = {}) {
     const cell = document.createElement(tagName);
     cell.className = 'admin-option-cell';
@@ -317,6 +393,9 @@ function getAdminOptionData(id) {
     }
     if (editor.type === 'medications') {
         return parseMedicationLines(value);
+    }
+    if (editor.type === 'doctors') {
+        return parseDoctorJson(value);
     }
     if (editor.type === 'dosages') {
         return parseDosageLines(value);
@@ -392,6 +471,72 @@ function createAdminMedicationOptionRow(medication = {}) {
     return row;
 }
 
+function createAdminDoctorOptionRow(doctor = {}) {
+    const row = document.createElement('div');
+    row.className = 'admin-option-row admin-option-row-doctor';
+
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'id',
+        placeholder: 'Doctor ID',
+        value: doctor.id || ''
+    }));
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'name',
+        placeholder: 'Doctor name',
+        value: doctor.name || ''
+    }));
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'designation',
+        placeholder: 'Designation',
+        value: doctor.designation || ''
+    }));
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'regNo',
+        placeholder: 'Registration no.',
+        value: doctor.regNo || ''
+    }));
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'email',
+        placeholder: 'Doctor email',
+        value: doctor.email || ''
+    }));
+    row.appendChild(createAdminOptionCell('input', {
+        name: 'driveFolderId',
+        placeholder: 'Drive folder ID',
+        value: doctor.driveFolderId || ''
+    }));
+
+    const signatureInput = document.createElement('input');
+    signatureInput.type = 'hidden';
+    signatureInput.dataset.field = 'signatureDataUrl';
+    signatureInput.value = doctor.signatureDataUrl || '';
+    row.appendChild(signatureInput);
+
+    const uploadCell = document.createElement('div');
+    uploadCell.className = 'admin-signature-upload';
+
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/png,image/jpeg';
+    fileInput.className = 'admin-signature-file';
+    uploadCell.appendChild(fileInput);
+
+    const signatureStatus = document.createElement('span');
+    signatureStatus.className = 'admin-signature-status';
+    signatureStatus.textContent = doctor.signatureDataUrl ? 'Signature saved' : 'No signature';
+    uploadCell.appendChild(signatureStatus);
+
+    const clearSignatureButton = document.createElement('button');
+    clearSignatureButton.type = 'button';
+    clearSignatureButton.className = 'admin-clear-signature-btn secondary';
+    clearSignatureButton.textContent = 'Clear signature';
+    uploadCell.appendChild(clearSignatureButton);
+
+    row.appendChild(uploadCell);
+    row.appendChild(createAdminRemoveOptionButton());
+    return row;
+}
+
 function createAdminRemoveOptionButton() {
     const button = document.createElement('button');
     button.type = 'button';
@@ -407,6 +552,9 @@ function createEmptyAdminOptionRow(id) {
     }
     if (editor.type === 'medications') {
         return createAdminMedicationOptionRow();
+    }
+    if (editor.type === 'doctors') {
+        return createAdminDoctorOptionRow();
     }
     if (editor.type === 'dosages') {
         return createAdminDosageOptionRow();
@@ -427,6 +575,8 @@ function renderAdminOptionEditorRows(id) {
     data.forEach(item => {
         if (editor.type === 'medications') {
             rowsContainer.appendChild(createAdminMedicationOptionRow(item));
+        } else if (editor.type === 'doctors') {
+            rowsContainer.appendChild(createAdminDoctorOptionRow(item));
         } else if (editor.type === 'dosages') {
             rowsContainer.appendChild(createAdminDosageOptionRow(item));
         } else {
@@ -464,6 +614,31 @@ function syncAdminOptionEditorToTextarea(id) {
             })
             .filter(Boolean)
             .join('\n');
+    } else if (editor.type === 'doctors') {
+        const doctors = rows
+            .map(row => {
+                const name = row.querySelector('[data-field="name"]')?.value.trim() || '';
+                const id = normalizeDoctorId(row.querySelector('[data-field="id"]')?.value || name);
+                const designation = row.querySelector('[data-field="designation"]')?.value.trim() || '';
+                const regNo = row.querySelector('[data-field="regNo"]')?.value.trim() || '';
+                const email = row.querySelector('[data-field="email"]')?.value.trim().toLowerCase() || '';
+                const driveFolderId = row.querySelector('[data-field="driveFolderId"]')?.value.trim() || '';
+                const signatureDataUrl = row.querySelector('[data-field="signatureDataUrl"]')?.value || '';
+                if (!id && !name && !email) {
+                    return null;
+                }
+                return {
+                    id,
+                    name,
+                    designation,
+                    regNo,
+                    email,
+                    driveFolderId,
+                    signatureDataUrl
+                };
+            })
+            .filter(Boolean);
+        value = serializeDoctorJson(doctors);
     } else if (editor.type === 'dosages') {
         value = rows
             .map(row => {
@@ -480,6 +655,43 @@ function syncAdminOptionEditorToTextarea(id) {
 
     textarea.value = value;
     updateAdminOptionSummary(id);
+}
+
+function readSignatureFile(fileInput, row, editorId) {
+    const file = fileInput.files && fileInput.files[0];
+    const signatureInput = row.querySelector('[data-field="signatureDataUrl"]');
+    const signatureStatus = row.querySelector('.admin-signature-status');
+
+    if (!file || !signatureInput) {
+        return;
+    }
+
+    if (!['image/png', 'image/jpeg'].includes(file.type)) {
+        if (signatureStatus) {
+            signatureStatus.textContent = 'Choose a PNG or JPG file';
+        }
+        fileInput.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function() {
+        signatureInput.value = reader.result || '';
+        if (signatureStatus) {
+            signatureStatus.textContent = file.name;
+        }
+        syncAdminOptionEditorToTextarea(editorId);
+    };
+    reader.onerror = function() {
+        if (signatureStatus) {
+            signatureStatus.textContent = 'Could not read file';
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+function getImageFormatFromDataUrl(dataUrl) {
+    return /^data:image\/jpe?g/i.test(dataUrl || '') ? 'JPEG' : 'PNG';
 }
 
 function syncAllAdminOptionEditors() {
@@ -555,10 +767,31 @@ function initializeAdminOptionEditors() {
         rowsContainer.addEventListener('input', function() {
             syncAdminOptionEditorToTextarea(id);
         });
-        rowsContainer.addEventListener('change', function() {
+        rowsContainer.addEventListener('change', function(event) {
+            if (event.target.classList.contains('admin-signature-file')) {
+                readSignatureFile(event.target, event.target.closest('.admin-option-row'), id);
+                return;
+            }
             syncAdminOptionEditorToTextarea(id);
         });
         rowsContainer.addEventListener('click', function(event) {
+            if (event.target.classList.contains('admin-clear-signature-btn')) {
+                const row = event.target.closest('.admin-option-row');
+                const signatureInput = row.querySelector('[data-field="signatureDataUrl"]');
+                const signatureStatus = row.querySelector('.admin-signature-status');
+                const fileInput = row.querySelector('.admin-signature-file');
+                if (signatureInput) {
+                    signatureInput.value = '';
+                }
+                if (fileInput) {
+                    fileInput.value = '';
+                }
+                if (signatureStatus) {
+                    signatureStatus.textContent = 'No signature';
+                }
+                syncAdminOptionEditorToTextarea(id);
+                return;
+            }
             if (!event.target.classList.contains('admin-remove-option-btn')) {
                 return;
             }
@@ -601,6 +834,7 @@ function serializeFooter(footer) {
 function populateAdminForm(config = appConfig) {
     setElementValue('adminComplaints', serializeLines(config.complaints));
     setElementValue('adminMedications', serializeMedicationLines(config.medications));
+    setElementValue('adminDoctors', serializeDoctorJson(config.doctors));
     setElementValue('adminOilDosages', serializeDosageLines(config.dosageOptions.oil));
     setElementValue('adminPillDosages', serializeDosageLines(config.dosageOptions.pills));
     setElementValue('adminGummyDosages', serializeDosageLines(config.dosageOptions.gummies));
@@ -653,6 +887,7 @@ function buildConfigFromAdminForm() {
         },
         footer: parseFooter(getElementValue('adminFooter'))
     };
+    config.doctors = parseDoctorJson(getElementValue('adminDoctors'));
 
     return normalizeOilDosageValues(config);
 }
@@ -681,6 +916,42 @@ function validateAdminConfig(config) {
             errors.push(`Medication "${medication.label}" is duplicated.`);
         }
         medicationIds.add(medication.id.toLowerCase());
+    });
+
+    if (!config.doctors.length) {
+        errors.push('Add at least one doctor.');
+    }
+
+    const doctorIds = new Set();
+    const doctorEmails = new Set();
+    config.doctors.forEach((doctor, index) => {
+        if (!doctor.id) {
+            errors.push(`Doctor row ${index + 1} is missing a doctor ID.`);
+        }
+        if (!doctor.name) {
+            errors.push(`Doctor row ${index + 1} is missing a name.`);
+        }
+        if (!doctor.email) {
+            errors.push(`Doctor "${doctor.name || index + 1}" is missing an email.`);
+        }
+        if (doctor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(doctor.email)) {
+            errors.push(`Doctor "${doctor.name || index + 1}" has an invalid email.`);
+        }
+        if (doctor.id && doctorIds.has(doctor.id.toLowerCase())) {
+            errors.push(`Doctor ID "${doctor.id}" is duplicated.`);
+        }
+        if (doctor.email && doctorEmails.has(doctor.email.toLowerCase())) {
+            errors.push(`Doctor email "${doctor.email}" is duplicated.`);
+        }
+        if (doctor.signatureDataUrl && !/^data:image\/(png|jpe?g);base64,/i.test(doctor.signatureDataUrl)) {
+            errors.push(`Doctor "${doctor.name || index + 1}" has an invalid signature image. Use PNG or JPG.`);
+        }
+        if (doctor.id) {
+            doctorIds.add(doctor.id.toLowerCase());
+        }
+        if (doctor.email) {
+            doctorEmails.add(doctor.email.toLowerCase());
+        }
     });
 
     ['oil', 'pills', 'gummies'].forEach(type => {
@@ -761,6 +1032,29 @@ function updateAdminStatus() {
     status.style.display = currentUser && currentUser.isAdmin ? 'block' : 'none';
 }
 
+function setDoctorSelectionForCurrentUser() {
+    const doctorSelect = document.getElementById('doctorSelect');
+    if (!doctorSelect) {
+        return;
+    }
+
+    if (!currentUser) {
+        doctorSelect.disabled = false;
+        return;
+    }
+
+    const matchedDoctor = getDoctorForEmail(currentUser.email);
+    if (matchedDoctor) {
+        doctorSelect.value = matchedDoctor.id;
+        doctorSelect.disabled = true;
+        return;
+    }
+
+    doctorSelect.disabled = !currentUser.isDoctor;
+}
+
+window.getDoctorDriveFolderId = getDoctorDriveFolderId;
+
 function openAdminPanel() {
     if (!currentUser || !currentUser.isAdmin) {
         alert('Only authorized admin users can open admin mode.');
@@ -781,7 +1075,7 @@ function closeAdminPanel() {
 }
 
 // Handle Google Sign-In response
-function handleCredentialResponse(response) {
+async function handleCredentialResponse(response) {
     // Decode the credential response
     const credential = parseJwt(response.credential);
     console.log("Decoded credential:", credential);
@@ -790,8 +1084,16 @@ function handleCredentialResponse(response) {
     const email = credential.email.toLowerCase();
     
     // Check if email is in the doctor or admin allowlists.
-    const isDoctor = isEmailAllowed(email, ALLOWED_EMAILS);
+    let isDoctor = isEmailAllowed(email, getConfiguredDoctorEmails());
     const isAdmin = isEmailAllowed(email, ADMIN_EMAILS);
+
+    if (!isDoctor && !isAdmin) {
+        document.getElementById('loginMessage').textContent = 'Checking latest doctor access...';
+        document.getElementById('loginMessage').className = 'login-message';
+        await loadRemoteAppConfig({ silent: true });
+        isDoctor = isEmailAllowed(email, getConfiguredDoctorEmails());
+    }
+
     const isAllowed = isDoctor || isAdmin;
     
     if (isAllowed) {
@@ -805,20 +1107,7 @@ function handleCredentialResponse(response) {
             isAdmin
         };
         
-        // Set the doctor select based on the email (case-insensitive)
-        if (email.includes('rohit')) {
-            document.getElementById('doctorSelect').value = 'dr_rohit';
-            document.getElementById('doctorSelect').disabled = true;
-        } else if (email.includes('rachna')) {
-            document.getElementById('doctorSelect').value = 'dr_rachna';
-            document.getElementById('doctorSelect').disabled = true;
-        } else if (email.includes('parul')) {
-            document.getElementById('doctorSelect').value = 'dr_parul';
-            document.getElementById('doctorSelect').disabled = true;
-        } else {
-            document.getElementById('doctorSelect').value = '';
-            document.getElementById('doctorSelect').disabled = !isDoctor;
-        }
+        setDoctorSelectionForCurrentUser();
         
         // Display login success and show app
         document.getElementById('loginMessage').textContent = 'Login successful!';
@@ -1071,16 +1360,8 @@ function resetForm() {
         document.getElementById('doctorSelect').value = '';
         document.getElementById('doctorSelect').disabled = false;
     } else {
-        // If user is logged in, keep their doctor selection
-        const email = currentUser.email.toLowerCase();
-        if (email.includes('rohit')) {
-            document.getElementById('doctorSelect').value = 'dr_rohit';
-        } else if (email.includes('rachna')) {
-            document.getElementById('doctorSelect').value = 'dr_rachna';
-        } else if (email.includes('parul')) {
-            document.getElementById('doctorSelect').value = 'dr_parul';
-        }
-        document.getElementById('doctorSelect').disabled = true;
+        // If user is logged in, keep their configured doctor selection.
+        setDoctorSelectionForCurrentUser();
     }
     
     // Reset patient information
@@ -1563,13 +1844,10 @@ document.addEventListener('DOMContentLoaded', function() {
             button.disabled = true;
 
             // Get all form data
+            const selectedDoctor = getDoctorConfig(document.getElementById('doctorSelect').value) || {};
             const prescriptionData = {
                 date: document.getElementById('date').value,
-                doctorName: document.getElementById('doctorSelect').value === 'dr_rohit' 
-                    ? 'Dr. Rohit Yenukoti' 
-                    : document.getElementById('doctorSelect').value === 'dr_rachna'
-                    ? 'Dr. Rachna Chandra'
-                    : 'Dr. Parul',
+                doctorName: selectedDoctor.name || '',
                 orderId: document.getElementById('orderId').value,
                 patientName: document.getElementById('patientName').value,
                 patientAge: document.getElementById('patientAge').value,
@@ -1731,26 +2009,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Get form data - automatically use authenticated doctor
         const doctorSelect = document.getElementById('doctorSelect').value;
         
-        // Define doctor information based on selection
-        const doctorInfo = {
-            dr_rohit: {
-                name: "Dr. Rohit Yenukoti",
-                designation: "MBBS",
-                regNo: "134654"
-            },
-            dr_rachna: {
-                name: "Dr. Rachna Chandra",
-                designation: "MBBS, MD",
-                regNo: "DMC/R/2261"
-            },
-            dr_parul: {
-                name: "Dr. Parul",
-                designation: "BAMS",
-                regNo: "DBCP/A/7986"
-            }
-        };
-
-        const selectedDoctor = doctorInfo[doctorSelect] || {};
+        const selectedDoctor = getDoctorConfig(doctorSelect) || {};
         
         // Get other form data
         const orderId = document.getElementById('orderId').value;
@@ -2066,15 +2325,26 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update finalY to be after notes
             finalY = finalY + 7 + (splitNotes.length * 5);
             
-            // Add signature on the right side at the same level
-            const signatureImg = document.getElementById(
-                doctorSelect === 'dr_rachna' ? 'rachnaSignature' : doctorSelect === 'dr_parul' ? 'parulSignature' : 'rohitSignature'
-            );
-            
-            if (signatureImg.complete && signatureImg.naturalHeight !== 0) {
-                const signWidth = 15;
-                const signHeight = (signWidth * signatureImg.naturalHeight) / signatureImg.naturalWidth;
-                doc.addImage(signatureImg, 'PNG', 150, finalY - 15, signWidth, signHeight);
+            // Prefer the admin-configured signature stored in Google Sheets.
+            if (selectedDoctor.signatureDataUrl) {
+                doc.addImage(
+                    selectedDoctor.signatureDataUrl,
+                    getImageFormatFromDataUrl(selectedDoctor.signatureDataUrl),
+                    150,
+                    finalY - 15,
+                    15,
+                    8
+                );
+            } else {
+                const signatureImg = document.getElementById(
+                    doctorSelect === 'dr_rachna' ? 'rachnaSignature' : doctorSelect === 'dr_parul' ? 'parulSignature' : 'rohitSignature'
+                );
+
+                if (signatureImg && signatureImg.complete && signatureImg.naturalHeight !== 0) {
+                    const signWidth = 15;
+                    const signHeight = (signWidth * signatureImg.naturalHeight) / signatureImg.naturalWidth;
+                    doc.addImage(signatureImg, 'PNG', 150, finalY - 15, signWidth, signHeight);
+                }
             }
             
             // Add seal to the right of signature

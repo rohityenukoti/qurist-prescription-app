@@ -127,6 +127,35 @@
             patientAgreement: 'This prescription is solely for therapeutic purposes and should not be used for medico-legal purposes.',
             contactInformation: 'For any further queries, please contact: +91 8448298093'
         },
+        doctors: [
+            {
+                id: 'dr_rohit',
+                name: 'Dr. Rohit Yenukoti',
+                designation: 'MBBS',
+                regNo: '134654',
+                email: 'rohit@qurist.in',
+                driveFolderId: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P',
+                signatureDataUrl: ''
+            },
+            {
+                id: 'dr_rachna',
+                name: 'Dr. Rachna Chandra',
+                designation: 'MBBS, MD',
+                regNo: 'DMC/R/2261',
+                email: 'rachna@qurist.in',
+                driveFolderId: '1Kv8U6FbGX4equiElhVB5ydZpgcXGZeFM',
+                signatureDataUrl: ''
+            },
+            {
+                id: 'dr_parul',
+                name: 'Dr. Parul',
+                designation: 'BAMS',
+                regNo: 'DBCP/A/7986',
+                email: 'drparul@qurist.in',
+                driveFolderId: '1uPj2gdGEOMuFNHdVatYPjrjKniId5TG5',
+                signatureDataUrl: ''
+            }
+        ],
         footer: {
             companyName: 'Hemp Health Pvt. Ltd.',
             cin: 'CIN No. U2423 | HR2020PTC087774',
