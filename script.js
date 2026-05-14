@@ -593,6 +593,74 @@ function createAdminRemoveOptionButton() {
     return button;
 }
 
+function getAdminOptionRemoveLabel(row, editor) {
+    if (!row || !editor) {
+        return 'this item';
+    }
+
+    if (editor.type === 'medications') {
+        const label = row.querySelector('[data-field="label"]')?.value.trim();
+        const pdfName = row.querySelector('[data-field="pdfName"]')?.value.trim();
+        return label || pdfName || editor.singularLabel || 'this medication';
+    }
+
+    if (editor.type === 'doctors') {
+        const name = row.querySelector('[data-field="name"]')?.value.trim();
+        const email = row.querySelector('[data-field="email"]')?.value.trim();
+        const id = row.querySelector('[data-field="id"]')?.value.trim();
+        return name || email || id || editor.singularLabel || 'this doctor';
+    }
+
+    const value = row.querySelector('[data-field="value"]')?.value.trim();
+    return value || editor.singularLabel || 'this item';
+}
+
+function confirmAdminOptionRemoval(row, editor) {
+    const itemLabel = getAdminOptionRemoveLabel(row, editor);
+    const message = `Remove "${itemLabel}"? This change is not published until you save admin settings.`;
+    const overlay = document.getElementById('adminRemoveConfirmLightbox');
+    const messageEl = document.getElementById('adminRemoveConfirmMessage');
+    const confirmBtn = document.getElementById('confirmAdminRemoveBtn');
+    const cancelBtn = document.getElementById('cancelAdminRemoveBtn');
+
+    if (!overlay || !messageEl || !confirmBtn || !cancelBtn) {
+        return Promise.resolve(window.confirm(message));
+    }
+
+    return new Promise(resolve => {
+        const close = confirmed => {
+            overlay.classList.remove('show');
+            overlay.setAttribute('aria-hidden', 'true');
+            confirmBtn.removeEventListener('click', onConfirm);
+            cancelBtn.removeEventListener('click', onCancel);
+            overlay.removeEventListener('click', onOverlayClick);
+            document.removeEventListener('keydown', onKeydown);
+            resolve(confirmed);
+        };
+        const onConfirm = () => close(true);
+        const onCancel = () => close(false);
+        const onOverlayClick = event => {
+            if (event.target === overlay) {
+                close(false);
+            }
+        };
+        const onKeydown = event => {
+            if (event.key === 'Escape') {
+                close(false);
+            }
+        };
+
+        messageEl.textContent = message;
+        overlay.classList.add('show');
+        overlay.setAttribute('aria-hidden', 'false');
+        confirmBtn.addEventListener('click', onConfirm);
+        cancelBtn.addEventListener('click', onCancel);
+        overlay.addEventListener('click', onOverlayClick);
+        document.addEventListener('keydown', onKeydown);
+        cancelBtn.focus();
+    });
+}
+
 function createEmptyAdminOptionRow(id) {
     const editor = ADMIN_OPTION_EDITORS[id];
     if (!editor) {
@@ -837,7 +905,7 @@ function initializeAdminOptionEditors() {
             }
             syncAdminOptionEditorToTextarea(id);
         });
-        rowsContainer.addEventListener('click', function(event) {
+        rowsContainer.addEventListener('click', async function(event) {
             if (event.target.classList.contains('admin-doctor-edit-btn')) {
                 const row = event.target.closest('.admin-option-row-doctor');
                 const details = row ? row.querySelector('.admin-doctor-details') : null;
@@ -877,7 +945,11 @@ function initializeAdminOptionEditors() {
             if (!event.target.classList.contains('admin-remove-option-btn')) {
                 return;
             }
-            event.target.closest('.admin-option-row').remove();
+            const row = event.target.closest('.admin-option-row');
+            if (!row || !(await confirmAdminOptionRemoval(row, editor))) {
+                return;
+            }
+            row.remove();
             if (!rowsContainer.querySelector('.admin-option-row')) {
                 const emptyState = document.createElement('p');
                 emptyState.className = 'admin-option-empty';
