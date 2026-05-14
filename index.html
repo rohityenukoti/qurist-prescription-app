@@ -86,10 +86,11 @@
         <div id="configStatus" class="config-status">Using default app settings.</div>
         <h1>Qurist Digital Prescription</h1>
         
-        <section id="adminPanel" class="admin-panel" style="display: none;">
+        <div id="adminModal" class="admin-modal-lightbox" aria-hidden="true">
+            <section id="adminPanel" class="admin-panel" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
             <div class="admin-header">
                 <div>
-                    <h2>Admin Mode</h2>
+                    <h2 id="adminModalTitle">Admin Mode</h2>
                     <p>Edit safe app content. Changes are saved to the App Config tab in Google Sheets.</p>
                 </div>
                 <button type="button" id="closeAdminBtn" class="secondary">Close Admin</button>
@@ -243,7 +244,8 @@
                 <button type="button" id="resetAdminConfigBtn" class="secondary">Reset To Defaults</button>
                 <button type="button" id="saveAdminConfigBtn">Save Admin Settings</button>
             </div>
-        </section>
+            </section>
+        </div>
 
         <form id="prescriptionForm">
             <div class="form-section">

@@ -1215,17 +1215,31 @@ function openAdminPanel() {
         return;
     }
 
+    const adminModal = document.getElementById('adminModal');
+    const adminPanel = document.getElementById('adminPanel');
+    const closeAdminBtn = document.getElementById('closeAdminBtn');
+    if (!adminModal || !adminPanel) {
+        return;
+    }
+
     populateAdminForm();
     clearAdminMessage();
-    document.getElementById('adminPanel').style.display = 'block';
-    document.getElementById('adminPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    adminPanel.scrollTop = 0;
+    adminModal.classList.add('show');
+    adminModal.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('admin-modal-open');
+    if (closeAdminBtn) {
+        closeAdminBtn.focus();
+    }
 }
 
 function closeAdminPanel() {
-    const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel) {
-        adminPanel.style.display = 'none';
+    const adminModal = document.getElementById('adminModal');
+    if (adminModal) {
+        adminModal.classList.remove('show');
+        adminModal.setAttribute('aria-hidden', 'true');
     }
+    document.body.classList.remove('admin-modal-open');
 }
 
 // Handle Google Sign-In response
@@ -1312,10 +1326,7 @@ function logout() {
     // Show login overlay and hide app
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('appContainer').style.display = 'none';
-    const adminPanel = document.getElementById('adminPanel');
-    if (adminPanel) {
-        adminPanel.style.display = 'none';
-    }
+    closeAdminPanel();
     
     // Reset login message
     document.getElementById('loginMessage').textContent = '';
@@ -1779,6 +1790,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     const adminModeBtn = document.getElementById('adminModeBtn');
+    const adminModal = document.getElementById('adminModal');
     const closeAdminBtn = document.getElementById('closeAdminBtn');
     const reloadAdminConfigBtn = document.getElementById('reloadAdminConfigBtn');
     const resetAdminConfigBtn = document.getElementById('resetAdminConfigBtn');
@@ -1790,6 +1802,18 @@ document.addEventListener('DOMContentLoaded', function() {
     if (closeAdminBtn) {
         closeAdminBtn.addEventListener('click', closeAdminPanel);
     }
+    if (adminModal) {
+        adminModal.addEventListener('click', function(event) {
+            if (event.target === adminModal) {
+                closeAdminPanel();
+            }
+        });
+    }
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeAdminPanel();
+        }
+    });
     if (reloadAdminConfigBtn) {
         reloadAdminConfigBtn.addEventListener('click', async function() {
             clearAdminMessage();
