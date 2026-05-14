@@ -384,6 +384,32 @@ function createAdminOptionCell(tagName = 'input', options = {}) {
     return cell;
 }
 
+function createAdminDoctorField(labelText, field) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'admin-doctor-field';
+
+    const label = document.createElement('span');
+    label.textContent = labelText;
+    wrapper.appendChild(label);
+    wrapper.appendChild(field);
+
+    return wrapper;
+}
+
+function getAdminDoctorRowTitle(row) {
+    const name = row.querySelector('[data-field="name"]')?.value.trim() || '';
+    const email = row.querySelector('[data-field="email"]')?.value.trim() || '';
+    const id = row.querySelector('[data-field="id"]')?.value.trim() || '';
+    return name || email || id || 'New doctor';
+}
+
+function updateAdminDoctorRowTitle(row) {
+    const title = row.querySelector('.admin-doctor-name');
+    if (title) {
+        title.textContent = getAdminDoctorRowTitle(row);
+    }
+}
+
 function getAdminOptionData(id) {
     const editor = ADMIN_OPTION_EDITORS[id];
     const value = getElementValue(id);
@@ -475,36 +501,53 @@ function createAdminDoctorOptionRow(doctor = {}) {
     const row = document.createElement('div');
     row.className = 'admin-option-row admin-option-row-doctor';
 
-    row.appendChild(createAdminOptionCell('input', {
+    const header = document.createElement('div');
+    header.className = 'admin-doctor-row-header';
+
+    const doctorName = document.createElement('strong');
+    doctorName.className = 'admin-doctor-name';
+    header.appendChild(doctorName);
+
+    const editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.className = 'admin-doctor-edit-btn secondary';
+    editButton.textContent = 'Edit';
+    header.appendChild(editButton);
+
+    const details = document.createElement('div');
+    details.className = 'admin-doctor-details';
+    details.hidden = true;
+
+    details.appendChild(createAdminDoctorField('Doctor ID', createAdminOptionCell('input', {
         name: 'id',
         placeholder: 'Doctor ID',
         value: doctor.id || ''
-    }));
-    row.appendChild(createAdminOptionCell('input', {
+    })));
+    details.appendChild(createAdminDoctorField('Doctor name', createAdminOptionCell('input', {
         name: 'name',
         placeholder: 'Doctor name',
         value: doctor.name || ''
-    }));
-    row.appendChild(createAdminOptionCell('input', {
+    })));
+    details.appendChild(createAdminDoctorField('Designation', createAdminOptionCell('input', {
         name: 'designation',
         placeholder: 'Designation',
         value: doctor.designation || ''
-    }));
-    row.appendChild(createAdminOptionCell('input', {
+    })));
+    details.appendChild(createAdminDoctorField('Registration no.', createAdminOptionCell('input', {
         name: 'regNo',
         placeholder: 'Registration no.',
         value: doctor.regNo || ''
-    }));
-    row.appendChild(createAdminOptionCell('input', {
+    })));
+    details.appendChild(createAdminDoctorField('Doctor email', createAdminOptionCell('input', {
         name: 'email',
         placeholder: 'Doctor email',
         value: doctor.email || ''
-    }));
-    row.appendChild(createAdminOptionCell('input', {
+    })));
+    details.appendChild(createAdminDoctorField('Drive folder ID', createAdminOptionCell('input', {
         name: 'driveFolderId',
         placeholder: 'Drive folder ID',
         value: doctor.driveFolderId || ''
-    }));
+    })));
 
     const signatureInput = document.createElement('input');
     signatureInput.type = 'hidden';
@@ -532,8 +575,13 @@ function createAdminDoctorOptionRow(doctor = {}) {
     clearSignatureButton.textContent = 'Clear signature';
     uploadCell.appendChild(clearSignatureButton);
 
-    row.appendChild(uploadCell);
-    row.appendChild(createAdminRemoveOptionButton());
+    details.appendChild(createAdminDoctorField('Signature', uploadCell));
+    details.appendChild(createAdminRemoveOptionButton());
+
+    row.appendChild(header);
+    row.appendChild(details);
+    row.appendChild(signatureInput);
+    updateAdminDoctorRowTitle(row);
     return row;
 }
 
@@ -617,6 +665,7 @@ function syncAdminOptionEditorToTextarea(id) {
     } else if (editor.type === 'doctors') {
         const doctors = rows
             .map(row => {
+                updateAdminDoctorRowTitle(row);
                 const name = row.querySelector('[data-field="name"]')?.value.trim() || '';
                 const id = normalizeDoctorId(row.querySelector('[data-field="id"]')?.value || name);
                 const designation = row.querySelector('[data-field="designation"]')?.value.trim() || '';
@@ -734,6 +783,12 @@ function initializeAdminOptionEditors() {
         const rowsContainer = shell.querySelector('.admin-option-rows');
         const addButton = shell.querySelector('.admin-add-option-btn');
 
+        if (editor.type === 'doctors') {
+            shell.classList.add('admin-doctor-editor');
+            panel.hidden = false;
+            toggleButton.remove();
+        }
+
         toggleButton.addEventListener('click', function() {
             if (panel.hidden) {
                 renderAdminOptionEditorRows(id);
@@ -757,6 +812,14 @@ function initializeAdminOptionEditors() {
             }
             const row = createEmptyAdminOptionRow(id);
             rowsContainer.appendChild(row);
+            if (editor.type === 'doctors') {
+                const details = row.querySelector('.admin-doctor-details');
+                const editButton = row.querySelector('.admin-doctor-edit-btn');
+                if (details && editButton) {
+                    details.hidden = false;
+                    editButton.textContent = 'Done';
+                }
+            }
             syncAdminOptionEditorToTextarea(id);
             const firstCell = row.querySelector('.admin-option-cell');
             if (firstCell) {
@@ -775,6 +838,25 @@ function initializeAdminOptionEditors() {
             syncAdminOptionEditorToTextarea(id);
         });
         rowsContainer.addEventListener('click', function(event) {
+            if (event.target.classList.contains('admin-doctor-edit-btn')) {
+                const row = event.target.closest('.admin-option-row-doctor');
+                const details = row ? row.querySelector('.admin-doctor-details') : null;
+                if (!details) {
+                    return;
+                }
+
+                details.hidden = !details.hidden;
+                event.target.textContent = details.hidden ? 'Edit' : 'Done';
+                if (!details.hidden) {
+                    const firstCell = details.querySelector('.admin-option-cell');
+                    if (firstCell) {
+                        firstCell.focus();
+                    }
+                } else {
+                    syncAdminOptionEditorToTextarea(id);
+                }
+                return;
+            }
             if (event.target.classList.contains('admin-clear-signature-btn')) {
                 const row = event.target.closest('.admin-option-row');
                 const signatureInput = row.querySelector('[data-field="signatureDataUrl"]');

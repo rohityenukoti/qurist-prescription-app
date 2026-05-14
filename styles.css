@@ -351,7 +351,64 @@ h2 {
 }
 
 .admin-option-row-doctor {
-    grid-template-columns: 100px minmax(0, 1.1fr) minmax(0, 0.75fr) minmax(0, 0.75fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+    display: block;
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    background-color: #ffffff;
+    overflow: hidden;
+}
+
+.admin-doctor-editor .admin-option-panel {
+    border-top: 1px solid #eef2f7;
+}
+
+.admin-doctor-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 10px;
+}
+
+.admin-doctor-name {
+    color: #2c3e50;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.admin-doctor-edit-btn {
+    padding: 7px 10px;
+    font-size: 13px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.admin-doctor-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    border-top: 1px solid #eef2f7;
+    background-color: #f8fafc;
+}
+
+.admin-doctor-details[hidden] {
+    display: none;
+}
+
+.admin-doctor-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: #2c3e50;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.admin-doctor-field .admin-option-cell,
+.admin-doctor-field .admin-signature-upload {
+    font-weight: normal;
 }
 
 .admin-option-cell {
