@@ -240,6 +240,43 @@ h2 {
     color: #666;
 }
 
+.admin-doctor-setup,
+.admin-settings-group {
+    border: 1px solid #d9e2ec;
+    border-radius: 8px;
+    background-color: #ffffff;
+    padding: 16px;
+}
+
+.admin-doctor-setup {
+    border-color: #b8d8f0;
+    background-color: #f4f9ff;
+    box-shadow: 0 2px 8px rgba(52, 152, 219, 0.12);
+    margin-bottom: 18px;
+}
+
+.admin-settings-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.admin-group-header {
+    margin-bottom: 14px;
+}
+
+.admin-group-header h3 {
+    color: #2c3e50;
+    font-size: 18px;
+    margin: 0 0 4px;
+}
+
+.admin-group-header p {
+    color: #666;
+    font-size: 14px;
+    margin: 0;
+}
+
 .admin-grid {
     display: grid;
     grid-template-columns: 1fr;
