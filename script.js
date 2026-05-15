@@ -1,7 +1,7 @@
 // Authentication variables
 let currentUser = null;
 const ALLOWED_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in', 'dr.vismaya@qurist.in'];
-const ADMIN_EMAILS = ['rohit@qurist.in', 'samisht@qurist.in', 'shivam@qurist.in'];
+const ADMIN_EMAILS = ['rohit@qurist.in', 'samisht@qurist.in', 'shivam@qurist.in', 'hello@qurist.in'];
 const CONFIG_CACHE_KEY = 'quristAppConfig';
 let appConfig = normalizeOilDosageValues(window.mergeQuristConfig ? window.mergeQuristConfig() : {});
 let appConfigMeta = { source: 'defaults', updatedAt: '' };
