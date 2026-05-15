@@ -615,10 +615,9 @@ function getAdminOptionRemoveLabel(row, editor) {
     return value || editor.singularLabel || 'this item';
 }
 
-function confirmAdminOptionRemoval(row, editor) {
-    const itemLabel = getAdminOptionRemoveLabel(row, editor);
-    const message = `Remove "${itemLabel}"? This change is not published until you save admin settings.`;
+function confirmAdminAction(message, options = {}) {
     const overlay = document.getElementById('adminRemoveConfirmLightbox');
+    const titleEl = document.getElementById('adminRemoveConfirmTitle');
     const messageEl = document.getElementById('adminRemoveConfirmMessage');
     const confirmBtn = document.getElementById('confirmAdminRemoveBtn');
     const cancelBtn = document.getElementById('cancelAdminRemoveBtn');
@@ -628,9 +627,15 @@ function confirmAdminOptionRemoval(row, editor) {
     }
 
     return new Promise(resolve => {
+        const originalTitle = titleEl ? titleEl.textContent : '';
+        const originalConfirmText = confirmBtn.textContent;
         const close = confirmed => {
             overlay.classList.remove('show');
             overlay.setAttribute('aria-hidden', 'true');
+            if (titleEl) {
+                titleEl.textContent = originalTitle;
+            }
+            confirmBtn.textContent = originalConfirmText;
             confirmBtn.removeEventListener('click', onConfirm);
             cancelBtn.removeEventListener('click', onCancel);
             overlay.removeEventListener('click', onOverlayClick);
@@ -650,7 +655,11 @@ function confirmAdminOptionRemoval(row, editor) {
             }
         };
 
+        if (titleEl) {
+            titleEl.textContent = options.title || 'Confirm action';
+        }
         messageEl.textContent = message;
+        confirmBtn.textContent = options.confirmLabel || 'Confirm';
         overlay.classList.add('show');
         overlay.setAttribute('aria-hidden', 'false');
         confirmBtn.addEventListener('click', onConfirm);
@@ -658,6 +667,15 @@ function confirmAdminOptionRemoval(row, editor) {
         overlay.addEventListener('click', onOverlayClick);
         document.addEventListener('keydown', onKeydown);
         cancelBtn.focus();
+    });
+}
+
+function confirmAdminOptionRemoval(row, editor) {
+    const itemLabel = getAdminOptionRemoveLabel(row, editor);
+    const message = `Remove "${itemLabel}"? This change is not published until you save admin settings.`;
+    return confirmAdminAction(message, {
+        title: 'Confirm remove',
+        confirmLabel: 'Remove'
     });
 }
 
@@ -1792,7 +1810,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const adminModeBtn = document.getElementById('adminModeBtn');
     const adminModal = document.getElementById('adminModal');
     const closeAdminBtn = document.getElementById('closeAdminBtn');
-    const reloadAdminConfigBtn = document.getElementById('reloadAdminConfigBtn');
+    const closeAdminFooterBtn = document.getElementById('closeAdminFooterBtn');
     const resetAdminConfigBtn = document.getElementById('resetAdminConfigBtn');
     const saveAdminConfigBtn = document.getElementById('saveAdminConfigBtn');
 
@@ -1801,6 +1819,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (closeAdminBtn) {
         closeAdminBtn.addEventListener('click', closeAdminPanel);
+    }
+    if (closeAdminFooterBtn) {
+        closeAdminFooterBtn.addEventListener('click', closeAdminPanel);
     }
     if (adminModal) {
         adminModal.addEventListener('click', function(event) {
@@ -1814,27 +1835,19 @@ document.addEventListener('DOMContentLoaded', function() {
             closeAdminPanel();
         }
     });
-    if (reloadAdminConfigBtn) {
-        reloadAdminConfigBtn.addEventListener('click', async function() {
-            clearAdminMessage();
-            this.disabled = true;
-            const originalText = this.textContent;
-            this.textContent = 'Loading...';
-            try {
-                const result = await loadRemoteAppConfig();
-                if (!result || !result.config) {
-                    applyAppConfig(window.cloneQuristConfig(window.QURIST_DEFAULT_APP_CONFIG), { source: 'defaults' });
-                }
-                populateAdminForm();
-                showAdminMessage(result && result.config ? 'Loaded admin settings from Google Sheets.' : 'No saved admin settings found. Defaults are loaded.');
-            } finally {
-                this.textContent = originalText;
-                this.disabled = false;
-            }
-        });
-    }
     if (resetAdminConfigBtn) {
-        resetAdminConfigBtn.addEventListener('click', function() {
+        resetAdminConfigBtn.addEventListener('click', async function() {
+            const confirmed = await confirmAdminAction(
+                'Reset all admin fields to default settings? This change is not published until you save admin settings.',
+                {
+                    title: 'Confirm reset',
+                    confirmLabel: 'Reset'
+                }
+            );
+            if (!confirmed) {
+                return;
+            }
+
             populateAdminForm(window.cloneQuristConfig(window.QURIST_DEFAULT_APP_CONFIG));
             showAdminMessage('Defaults loaded in the admin form. Click Save Admin Settings to publish them.');
         });
