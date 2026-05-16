@@ -1181,6 +1181,130 @@ function clearAdminMessage() {
     adminMessage.className = 'admin-message';
 }
 
+function formatAppConfigVersionDate(updatedAt) {
+    const date = new Date(updatedAt);
+    if (Number.isNaN(date.getTime())) {
+        return updatedAt || 'Unknown date';
+    }
+
+    return date.toLocaleString();
+}
+
+function setAdminVersionHistoryMessage(message, type = '') {
+    const messageEl = document.getElementById('adminVersionHistoryMessage');
+    if (!messageEl) {
+        return;
+    }
+
+    messageEl.textContent = message;
+    messageEl.className = type ? `admin-version-message ${type}` : 'admin-version-message';
+}
+
+function renderAdminVersionHistoryList(versions = []) {
+    const list = document.getElementById('adminVersionHistoryList');
+    if (!list) {
+        return;
+    }
+
+    list.innerHTML = '';
+    if (!versions.length) {
+        const emptyState = document.createElement('div');
+        emptyState.className = 'admin-version-empty';
+        emptyState.textContent = 'No saved app config versions found yet.';
+        list.appendChild(emptyState);
+        return;
+    }
+
+    versions.forEach((version, index) => {
+        const row = document.createElement('div');
+        row.className = 'admin-version-row';
+
+        const details = document.createElement('div');
+        details.className = 'admin-version-details';
+
+        const title = document.createElement('strong');
+        title.textContent = formatAppConfigVersionDate(version.updatedAt);
+        details.appendChild(title);
+
+        const meta = document.createElement('span');
+        meta.textContent = index === 0 ? 'Latest version' : version.sheetTitle;
+        details.appendChild(meta);
+
+        const restoreButton = document.createElement('button');
+        restoreButton.type = 'button';
+        restoreButton.className = 'admin-version-restore-btn secondary';
+        restoreButton.dataset.sheetTitle = version.sheetTitle;
+        restoreButton.dataset.versionLabel = formatAppConfigVersionDate(version.updatedAt);
+        restoreButton.textContent = index === 0 ? 'Restore Latest' : 'Restore';
+
+        row.appendChild(details);
+        row.appendChild(restoreButton);
+        list.appendChild(row);
+    });
+}
+
+function closeAdminVersionHistory() {
+    const overlay = document.getElementById('adminVersionHistoryLightbox');
+    if (!overlay) {
+        return;
+    }
+
+    overlay.classList.remove('show');
+    overlay.setAttribute('aria-hidden', 'true');
+}
+
+async function loadAdminVersionHistory() {
+    if (typeof window.listAppConfigVersions !== 'function') {
+        throw new Error('App config version history helper is unavailable.');
+    }
+
+    setAdminVersionHistoryMessage('Loading app config versions...');
+    renderAdminVersionHistoryList([]);
+    const versions = await window.listAppConfigVersions();
+    setAdminVersionHistoryMessage(versions.length ? '' : 'No version history is available yet.');
+    renderAdminVersionHistoryList(versions);
+}
+
+async function openAdminVersionHistory() {
+    const overlay = document.getElementById('adminVersionHistoryLightbox');
+    const closeButton = document.getElementById('closeAdminVersionHistoryBtn');
+    if (!overlay) {
+        return;
+    }
+
+    overlay.classList.add('show');
+    overlay.setAttribute('aria-hidden', 'false');
+    if (closeButton) {
+        closeButton.focus();
+    }
+
+    try {
+        await loadAdminVersionHistory();
+    } catch (error) {
+        console.error('Unable to load app config versions:', error);
+        setAdminVersionHistoryMessage(`Could not load version history: ${error.message}`, 'error');
+    }
+}
+
+async function restoreAdminConfigVersion(sheetTitle, versionLabel) {
+    if (typeof window.getAppConfigVersionFromSheet !== 'function' || typeof window.restoreAppConfigVersion !== 'function') {
+        throw new Error('App config restore helpers are unavailable.');
+    }
+
+    const version = await window.getAppConfigVersionFromSheet(sheetTitle);
+    const errors = validateAdminConfig(version.config);
+    if (errors.length) {
+        throw new Error(`Selected version cannot be restored: ${errors.join(' ')}`);
+    }
+
+    const result = await window.restoreAppConfigVersion(sheetTitle);
+    applyAppConfig(result.config, { source: 'google-sheet', updatedAt: result.updatedAt });
+    setCachedConfig(appConfig, result.updatedAt);
+    populateAdminForm();
+    closeAdminVersionHistory();
+    showAdminMessage(`Restored app config from ${versionLabel}. A new latest version was created.`);
+}
+
 function updateAdminVisibility() {
     const adminModeBtn = document.getElementById('adminModeBtn');
     if (adminModeBtn) {
@@ -1811,7 +1935,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const adminModal = document.getElementById('adminModal');
     const closeAdminBtn = document.getElementById('closeAdminBtn');
     const closeAdminFooterBtn = document.getElementById('closeAdminFooterBtn');
-    const resetAdminConfigBtn = document.getElementById('resetAdminConfigBtn');
+    const versionHistoryBtn = document.getElementById('versionHistoryBtn');
+    const versionHistoryOverlay = document.getElementById('adminVersionHistoryLightbox');
+    const closeVersionHistoryBtn = document.getElementById('closeAdminVersionHistoryBtn');
+    const versionHistoryList = document.getElementById('adminVersionHistoryList');
     const saveAdminConfigBtn = document.getElementById('saveAdminConfigBtn');
 
     if (adminModeBtn) {
@@ -1832,24 +1959,63 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
+            const confirmOverlay = document.getElementById('adminRemoveConfirmLightbox');
+            if (confirmOverlay && confirmOverlay.classList.contains('show')) {
+                return;
+            }
+            if (versionHistoryOverlay && versionHistoryOverlay.classList.contains('show')) {
+                closeAdminVersionHistory();
+                return;
+            }
             closeAdminPanel();
         }
     });
-    if (resetAdminConfigBtn) {
-        resetAdminConfigBtn.addEventListener('click', async function() {
+    if (versionHistoryBtn) {
+        versionHistoryBtn.addEventListener('click', openAdminVersionHistory);
+    }
+    if (closeVersionHistoryBtn) {
+        closeVersionHistoryBtn.addEventListener('click', closeAdminVersionHistory);
+    }
+    if (versionHistoryOverlay) {
+        versionHistoryOverlay.addEventListener('click', function(event) {
+            if (event.target === versionHistoryOverlay) {
+                closeAdminVersionHistory();
+            }
+        });
+    }
+    if (versionHistoryList) {
+        versionHistoryList.addEventListener('click', async function(event) {
+            const restoreButton = event.target.closest('.admin-version-restore-btn');
+            if (!restoreButton) {
+                return;
+            }
+
+            const sheetTitle = restoreButton.dataset.sheetTitle;
+            const versionLabel = restoreButton.dataset.versionLabel || 'the selected version';
             const confirmed = await confirmAdminAction(
-                'Reset all admin fields to default settings? This change is not published until you save admin settings.',
+                `Restore app config from ${versionLabel}? This will immediately publish it as the latest version.`,
                 {
-                    title: 'Confirm reset',
-                    confirmLabel: 'Reset'
+                    title: 'Confirm restore',
+                    confirmLabel: 'Restore'
                 }
             );
             if (!confirmed) {
                 return;
             }
 
-            populateAdminForm(window.cloneQuristConfig(window.QURIST_DEFAULT_APP_CONFIG));
-            showAdminMessage('Defaults loaded in the admin form. Click Save Admin Settings to publish them.');
+            const originalText = restoreButton.textContent;
+            restoreButton.disabled = true;
+            restoreButton.textContent = 'Restoring...';
+            setAdminVersionHistoryMessage('Restoring selected app config version...');
+            try {
+                await restoreAdminConfigVersion(sheetTitle, versionLabel);
+            } catch (error) {
+                console.error('Unable to restore app config version:', error);
+                setAdminVersionHistoryMessage(`Could not restore version: ${error.message}`, 'error');
+            } finally {
+                restoreButton.textContent = originalText;
+                restoreButton.disabled = false;
+            }
         });
     }
     if (saveAdminConfigBtn) {

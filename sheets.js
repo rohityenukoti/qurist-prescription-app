@@ -17,6 +17,7 @@ const DRIVE_FOLDER_IDS = {
     dr_parul: '1uPj2gdGEOMuFNHdVatYPjrjKniId5TG5'
 };
 const APP_CONFIG_SHEET_TITLE = 'App Config';
+const APP_CONFIG_VERSION_PREFIX = `${APP_CONFIG_SHEET_TITLE} `;
 const APP_CONFIG_CHUNK_SIZE = 40000;
 
 
@@ -452,30 +453,7 @@ async function getPrescriptionSpreadsheetId(dateString) {
 }
 
 async function ensureSheetExists(spreadsheetId, sheetTitle, retryCount = 0) {
-    // Ensure we have an access token
-    if (!accessToken) {
-        await getAccessToken();
-    }
-
-    // Get spreadsheet metadata to check existing sheets
-    const metadataResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        }
-    });
-
-    if (!metadataResponse.ok) {
-        if (metadataResponse.status === 401 && retryCount < 1) {
-            // Refresh token and retry once
-            accessToken = null;
-            await getAccessToken();
-            return ensureSheetExists(spreadsheetId, sheetTitle, retryCount + 1);
-        }
-        const errorText = await metadataResponse.text();
-        throw new Error(`Failed to fetch spreadsheet metadata: ${metadataResponse.status} ${errorText}`);
-    }
-
-    const spreadsheet = await metadataResponse.json();
+    const spreadsheet = await fetchSpreadsheetMetadata(spreadsheetId, retryCount);
     const sheets = (spreadsheet.sheets || []).map(s => (s.properties || {}).title);
     const sheetAlreadyExists = sheets.includes(sheetTitle);
 
@@ -513,6 +491,32 @@ async function ensureSheetExists(spreadsheetId, sheetTitle, retryCount = 0) {
         const errorText = await addSheetResponse.text();
         throw new Error(`Failed to create sheet '${sheetTitle}': ${addSheetResponse.status} ${errorText}`);
     }
+}
+
+async function fetchSpreadsheetMetadata(spreadsheetId, retryCount = 0) {
+    // Ensure we have an access token
+    if (!accessToken) {
+        await getAccessToken();
+    }
+
+    const metadataResponse = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}`, {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
+        }
+    });
+
+    if (!metadataResponse.ok) {
+        if (metadataResponse.status === 401 && retryCount < 1) {
+            // Refresh token and retry once
+            accessToken = null;
+            await getAccessToken();
+            return fetchSpreadsheetMetadata(spreadsheetId, retryCount + 1);
+        }
+        const errorText = await metadataResponse.text();
+        throw new Error(`Failed to fetch spreadsheet metadata: ${metadataResponse.status} ${errorText}`);
+    }
+
+    return metadataResponse.json();
 }
 
 function getSheetRange(sheetTitle, range) {
@@ -579,21 +583,44 @@ async function updateSheetValues(spreadsheetId, range, values, retryCount = 0) {
     return response.json();
 }
 
-async function getAppConfigFromSheet() {
-    await ensureSheetExists(APP_CONFIG_SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
+function getAppConfigVersionSheetTitle(updatedAt = new Date().toISOString()) {
+    const safeTimestamp = updatedAt.replace(/[:.]/g, '-');
+    return `${APP_CONFIG_VERSION_PREFIX}${safeTimestamp}`;
+}
 
-    const range = getSheetRange(APP_CONFIG_SHEET_TITLE, 'A:C');
-    const result = await fetchSheetValues(APP_CONFIG_SPREADSHEET_ID, range);
-    const rows = result.values || [];
+function getAppConfigVersionTimestamp(sheetTitle) {
+    if (!sheetTitle || !sheetTitle.startsWith(APP_CONFIG_VERSION_PREFIX)) {
+        return '';
+    }
+
+    const safeTimestamp = sheetTitle.slice(APP_CONFIG_VERSION_PREFIX.length);
+    const match = safeTimestamp.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/);
+    if (!match) {
+        return '';
+    }
+
+    return `${match[1]}T${match[2]}:${match[3]}:${match[4]}.${match[5]}Z`;
+}
+
+function getAppConfigVersionLabel(updatedAt) {
+    const date = new Date(updatedAt);
+    if (Number.isNaN(date.getTime())) {
+        return updatedAt || 'Unknown date';
+    }
+
+    return date.toLocaleString();
+}
+
+function parseAppConfigRows(rows, fallbackUpdatedAt = '') {
     const chunkRows = rows.filter(row => /^config:\d+$/.test(row[0] || '') && row[1]);
 
     if (chunkRows.length) {
         const latestUpdatedAt = chunkRows
-            .map(row => row[2] || '')
+            .map(row => row[2] || fallbackUpdatedAt)
             .sort()
-            .pop() || '';
+            .pop() || fallbackUpdatedAt;
         const configJson = chunkRows
-            .filter(row => (row[2] || '') === latestUpdatedAt)
+            .filter(row => (row[2] || fallbackUpdatedAt) === latestUpdatedAt)
             .sort((a, b) => Number(a[0].split(':')[1]) - Number(b[0].split(':')[1]))
             .map(row => row[1] || '')
             .join('');
@@ -612,23 +639,90 @@ async function getAppConfigFromSheet() {
 
     return {
         config: JSON.parse(configRow[1]),
-        updatedAt: configRow[2] || ''
+        updatedAt: configRow[2] || fallbackUpdatedAt
     };
 }
 
-async function saveAppConfigToSheet(config) {
-    await ensureSheetExists(APP_CONFIG_SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
-
-    const updatedAt = new Date().toISOString();
+function serializeAppConfigRows(config, updatedAt) {
     const configJson = JSON.stringify(config);
     const chunks = configJson.match(new RegExp(`.{1,${APP_CONFIG_CHUNK_SIZE}}`, 'g')) || [''];
-    const values = [
+
+    return [
         ['key', 'json', 'updatedAt'],
         ...chunks.map((chunk, index) => [`config:${index}`, chunk, updatedAt])
     ];
+}
 
-    await updateSheetValues(APP_CONFIG_SPREADSHEET_ID, getSheetRange(APP_CONFIG_SHEET_TITLE, `A1:C${values.length}`), values);
-    return { updatedAt };
+async function listAppConfigVersions() {
+    const spreadsheet = await fetchSpreadsheetMetadata(APP_CONFIG_SPREADSHEET_ID);
+    return (spreadsheet.sheets || [])
+        .map(sheet => (sheet.properties || {}).title || '')
+        .map(title => ({
+            sheetTitle: title,
+            updatedAt: getAppConfigVersionTimestamp(title)
+        }))
+        .filter(version => version.updatedAt)
+        .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+        .map(version => ({
+            ...version,
+            label: getAppConfigVersionLabel(version.updatedAt)
+        }));
+}
+
+async function getAppConfigVersionFromSheet(sheetTitle) {
+    if (!getAppConfigVersionTimestamp(sheetTitle)) {
+        throw new Error('Invalid app config version sheet.');
+    }
+
+    const range = getSheetRange(sheetTitle, 'A:C');
+    const result = await fetchSheetValues(APP_CONFIG_SPREADSHEET_ID, range);
+    const parsedConfig = parseAppConfigRows(result.values || [], getAppConfigVersionTimestamp(sheetTitle));
+
+    if (!parsedConfig || !parsedConfig.config) {
+        throw new Error('The selected app config version is empty.');
+    }
+
+    return {
+        ...parsedConfig,
+        sheetTitle,
+        label: getAppConfigVersionLabel(parsedConfig.updatedAt)
+    };
+}
+
+async function restoreAppConfigVersion(sheetTitle) {
+    const version = await getAppConfigVersionFromSheet(sheetTitle);
+    const saved = await saveAppConfigToSheet(version.config);
+    return {
+        ...saved,
+        config: version.config,
+        restoredFrom: {
+            sheetTitle: version.sheetTitle,
+            updatedAt: version.updatedAt,
+            label: version.label
+        }
+    };
+}
+
+async function getAppConfigFromSheet() {
+    const versions = await listAppConfigVersions();
+    if (versions.length) {
+        return getAppConfigVersionFromSheet(versions[0].sheetTitle);
+    }
+
+    await ensureSheetExists(APP_CONFIG_SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
+    const range = getSheetRange(APP_CONFIG_SHEET_TITLE, 'A:C');
+    const result = await fetchSheetValues(APP_CONFIG_SPREADSHEET_ID, range);
+    return parseAppConfigRows(result.values || []);
+}
+
+async function saveAppConfigToSheet(config) {
+    const updatedAt = new Date().toISOString();
+    const sheetTitle = getAppConfigVersionSheetTitle(updatedAt);
+    const values = serializeAppConfigRows(config, updatedAt);
+
+    await ensureSheetExists(APP_CONFIG_SPREADSHEET_ID, sheetTitle);
+    await updateSheetValues(APP_CONFIG_SPREADSHEET_ID, getSheetRange(sheetTitle, `A1:C${values.length}`), values);
+    return { updatedAt, sheetTitle };
 }
 
 // Save prescription data to Google Sheets, including PDF URL
@@ -753,5 +847,8 @@ window.savePrescriptionToSheet = savePrescriptionToSheet;
 window.uploadPdfToDrive = uploadPdfToDrive;
 window.getAppConfigFromSheet = getAppConfigFromSheet;
 window.saveAppConfigToSheet = saveAppConfigToSheet;
+window.listAppConfigVersions = listAppConfigVersions;
+window.getAppConfigVersionFromSheet = getAppConfigVersionFromSheet;
+window.restoreAppConfigVersion = restoreAppConfigVersion;
 window.revokeAccess = revokeAccess; 
 window.clearGoogleAccessToken = clearGoogleAccessToken;

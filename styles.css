@@ -825,6 +825,103 @@ button[type="reset"]:hover {
     margin-bottom: 18px;
 }
 
+.admin-version-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 1650;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+.admin-version-lightbox.show {
+    display: flex;
+}
+
+.admin-version-modal {
+    width: min(680px, 100%);
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+    padding: 24px;
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.admin-version-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 16px;
+}
+
+.admin-version-header h3 {
+    color: #2c3e50;
+    margin-bottom: 6px;
+}
+
+.admin-version-header p,
+.admin-version-details span,
+.admin-version-empty {
+    color: #666;
+}
+
+.admin-version-message {
+    min-height: 20px;
+    margin-bottom: 12px;
+    color: #666;
+    font-size: 14px;
+}
+
+.admin-version-message.error {
+    color: #e74c3c;
+}
+
+.admin-version-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.admin-version-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid #d9e2ec;
+    border-radius: 6px;
+    background-color: #fbfbff;
+}
+
+.admin-version-details {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.admin-version-details strong {
+    color: #2c3e50;
+}
+
+.admin-version-details span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.admin-version-empty {
+    padding: 18px;
+    border: 1px dashed #d9e2ec;
+    border-radius: 6px;
+    text-align: center;
+}
+
 button.danger {
     background-color: #e74c3c;
     color: white;
@@ -849,8 +946,14 @@ button.danger:hover {
     }
 
     .admin-header,
+    .admin-version-header,
     .admin-actions,
     .form-actions {
+        flex-direction: column;
+    }
+
+    .admin-version-row {
+        align-items: stretch;
         flex-direction: column;
     }
 

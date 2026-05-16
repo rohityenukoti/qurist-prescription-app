@@ -76,6 +76,21 @@
             </div>
         </div>
     </div>
+
+    <!-- Admin app config version history -->
+    <div id="adminVersionHistoryLightbox" class="admin-version-lightbox" aria-hidden="true">
+        <div class="admin-version-modal" role="dialog" aria-modal="true" aria-labelledby="adminVersionHistoryTitle">
+            <div class="admin-version-header">
+                <div>
+                    <h3 id="adminVersionHistoryTitle">App Config Version History</h3>
+                    <p>Restore a previous saved app config version. Restoring creates a new latest version.</p>
+                </div>
+                <button type="button" id="closeAdminVersionHistoryBtn" class="secondary">Close</button>
+            </div>
+            <div id="adminVersionHistoryMessage" class="admin-version-message"></div>
+            <div id="adminVersionHistoryList" class="admin-version-list"></div>
+        </div>
+    </div>
     
     <div id="appContainer" class="container" style="display: none;">
         <div class="user-info">
@@ -241,7 +256,7 @@
 
             <div class="admin-actions">
                 <button type="button" id="closeAdminFooterBtn" class="secondary">Close Admin</button>
-                <button type="button" id="resetAdminConfigBtn" class="secondary">Reset To Defaults</button>
+                <button type="button" id="versionHistoryBtn" class="secondary">Version History</button>
                 <button type="button" id="saveAdminConfigBtn">Save Admin Settings</button>
             </div>
             </section>
