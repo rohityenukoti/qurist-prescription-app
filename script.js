@@ -1,6 +1,6 @@
 // Authentication variables
 let currentUser = null;
-const ALLOWED_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in', 'dr.vismaya@qurist.in'];
+const ALLOWED_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in', 'dr.vismaya@qurist.in', 'dr.mrinal@qurist.in'];
 const ADMIN_EMAILS = ['rohit@qurist.in', 'samisht@qurist.in', 'shivam@qurist.in', 'hello@qurist.in'];
 const CONFIG_CACHE_KEY = 'quristAppConfig';
 let appConfig = normalizeOilDosageValues(window.mergeQuristConfig ? window.mergeQuristConfig() : {});
@@ -141,7 +141,7 @@ async function loadRemoteAppConfig(options = {}) {
             throw new Error('App config sheet helper is unavailable.');
         }
 
-        const result = await window.getAppConfigFromSheet();
+        const result = await window.getAppConfigFromSheet({ prompt: options.prompt });
         if (result && result.config) {
             applyAppConfig(result.config, { source: 'google-sheet', updatedAt: result.updatedAt || '' });
             setCachedConfig(appConfig, result.updatedAt || '');
@@ -176,7 +176,8 @@ function getConfiguredDoctorEmails() {
     const configEmails = (appConfig.doctors || [])
         .map(doctor => doctor.email)
         .filter(Boolean);
-    return configEmails.length ? configEmails : ALLOWED_EMAILS;
+    const mergedEmails = [...new Set([...configEmails, ...ALLOWED_EMAILS].map(email => email.toLowerCase()))];
+    return mergedEmails.length ? mergedEmails : ALLOWED_EMAILS;
 }
 
 function getDoctorForEmail(email) {
@@ -1402,6 +1403,11 @@ async function handleCredentialResponse(response) {
         document.getElementById('loginMessage').className = 'login-message';
         await loadRemoteAppConfig({ silent: true });
         isDoctor = isEmailAllowed(email, getConfiguredDoctorEmails());
+
+        if (!isDoctor && !isAdmin) {
+            await loadRemoteAppConfig({ silent: true, prompt: 'consent' });
+            isDoctor = isEmailAllowed(email, getConfiguredDoctorEmails());
+        }
     }
 
     const isAllowed = isDoctor || isAdmin;

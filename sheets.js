@@ -14,7 +14,8 @@ const PRESCRIPTION_SPREADSHEET_IDS_BY_YEAR = {
 const DRIVE_FOLDER_IDS = { 
     dr_rohit: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P',
     dr_rachna: '1Kv8U6FbGX4equiElhVB5ydZpgcXGZeFM',
-    dr_parul: '1uPj2gdGEOMuFNHdVatYPjrjKniId5TG5'
+    dr_parul: '1uPj2gdGEOMuFNHdVatYPjrjKniId5TG5',
+    dr_mrinal: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P'
 };
 const APP_CONFIG_SHEET_TITLE = 'App Config';
 const APP_CONFIG_VERSION_PREFIX = `${APP_CONFIG_SHEET_TITLE} `;
@@ -149,7 +150,7 @@ async function loadGoogleAPIs() {
 }
 
 // Request access token
-async function getAccessToken() {
+async function getAccessToken(options = {}) {
     return new Promise(async (resolve, reject) => {
         try {
             if (!tokenClient) {
@@ -171,7 +172,7 @@ async function getAccessToken() {
             };
             
             tokenClient.requestAccessToken({
-                prompt: ''  // Use empty string for silent token refresh when possible
+                prompt: options.prompt || ''
             });
         } catch (error) {
             console.error('Error in getAccessToken:', error);
@@ -524,9 +525,9 @@ function getSheetRange(sheetTitle, range) {
     return `'${escapedTitle}'!${range}`;
 }
 
-async function ensureAccessToken() {
+async function ensureAccessToken(options = {}) {
     if (!accessToken) {
-        await getAccessToken();
+        await getAccessToken(options);
     }
 
     if (!accessToken) {
@@ -703,7 +704,8 @@ async function restoreAppConfigVersion(sheetTitle) {
     };
 }
 
-async function getAppConfigFromSheet() {
+async function getAppConfigFromSheet(options = {}) {
+    await ensureAccessToken(options);
     const versions = await listAppConfigVersions();
     if (versions.length) {
         return getAppConfigVersionFromSheet(versions[0].sheetTitle);

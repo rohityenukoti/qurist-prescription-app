@@ -154,6 +154,15 @@
                 email: 'drparul@qurist.in',
                 driveFolderId: '1uPj2gdGEOMuFNHdVatYPjrjKniId5TG5',
                 signatureDataUrl: ''
+            },
+            {
+                id: 'dr_mrinal',
+                name: 'Dr. Mrinal Singh',
+                designation: 'MBBS',
+                regNo: 'DMC/R/29653',
+                email: 'dr.mrinal@qurist.in',
+                driveFolderId: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P',
+                signatureDataUrl: ''
             }
         ],
         footer: {
