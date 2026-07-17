@@ -81,10 +81,11 @@ async function initGoogleAPI() {
 
 function initializeTokenClient(resolve, reject) {
     try {
-        // Updated scope to include drive.file access
+        // drive.file only allows uploads to app-created/opened files. Use drive so doctors
+        // can upload to folders shared with them (e.g. admin-created prescription folders).
         tokenClient = google.accounts.oauth2.initTokenClient({
             client_id: CLIENT_ID,
-            scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+            scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive',
             callback: (tokenResponse) => {
                 if (tokenResponse && tokenResponse.access_token) {
                     console.log('Access token received in initialization');
@@ -239,15 +240,21 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit', option
 
             if (response.status === 403 && !options.retriedWithConsent) {
                 console.log('Drive upload denied. Retrying with fresh Google consent...');
-                accessToken = null;
+                if (accessToken && typeof google !== 'undefined' && google.accounts && google.accounts.oauth2) {
+                    const tokenToRevoke = accessToken;
+                    accessToken = null;
+                    google.accounts.oauth2.revoke(tokenToRevoke, () => {});
+                } else {
+                    accessToken = null;
+                }
                 await getAccessToken({ prompt: 'consent' });
                 return uploadPdfToDrive(pdfBlob, fileName, doctorId, { ...options, retriedWithConsent: true, prompt: 'consent' });
             }
             
             if (response.status === 403) {
                 throw new Error(
-                    `Google Drive denied the upload (403). Confirm dr.mrinal@qurist.in has Editor access to the doctor folder ` +
-                    `(${folderId}) and allow Google Drive access when prompted. Details: ${errorText}`
+                    `Google Drive denied the upload. Confirm the signed-in doctor has Editor access to folder ${folderId}. ` +
+                    `If an admin created the folder, transfer ownership to the doctor or re-share it as Editor. Details: ${errorText}`
                 );
             }
 
