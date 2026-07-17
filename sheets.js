@@ -15,7 +15,7 @@ const DRIVE_FOLDER_IDS = {
     dr_rohit: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P',
     dr_rachna: '1Kv8U6FbGX4equiElhVB5ydZpgcXGZeFM',
     dr_parul: '1uPj2gdGEOMuFNHdVatYPjrjKniId5TG5',
-    dr_mrinal: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P'
+    dr_mrinal: '1w1lgcR2LQ4WI-kSEp1WnoFpobV6BS2E9'
 };
 const APP_CONFIG_SHEET_TITLE = 'App Config';
 const APP_CONFIG_VERSION_PREFIX = `${APP_CONFIG_SHEET_TITLE} `;
@@ -183,14 +183,14 @@ async function getAccessToken(options = {}) {
 }
 
 // Upload a PDF to Google Drive
-async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
+async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit', options = {}) {
     try {
         console.log('Uploading PDF to Google Drive...');
         
         // Ensure we have an access token
         if (!accessToken) {
             console.log('No access token found, requesting one...');
-            await getAccessToken();
+            await getAccessToken({ prompt: options.prompt || '' });
         }
         
         if (!accessToken) {
@@ -203,6 +203,7 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
             : '';
         const folderId = configuredFolderId || DRIVE_FOLDER_IDS[doctorId] || DRIVE_FOLDER_IDS.dr_rohit;
         const folderUrl = `https://drive.google.com/drive/folders/${folderId}`;
+        console.log('Uploading PDF to Drive folder:', folderId, 'for doctor:', doctorId);
 
         // Create form data for the file upload
         const formData = new FormData();
@@ -233,9 +234,23 @@ async function uploadPdfToDrive(pdfBlob, fileName, doctorId = 'dr_rohit') {
                 // Clear the expired token
                 accessToken = null;
                 // Try again with a fresh token
-                return uploadPdfToDrive(pdfBlob, fileName, doctorId);
+                return uploadPdfToDrive(pdfBlob, fileName, doctorId, options);
+            }
+
+            if (response.status === 403 && !options.retriedWithConsent) {
+                console.log('Drive upload denied. Retrying with fresh Google consent...');
+                accessToken = null;
+                await getAccessToken({ prompt: 'consent' });
+                return uploadPdfToDrive(pdfBlob, fileName, doctorId, { ...options, retriedWithConsent: true, prompt: 'consent' });
             }
             
+            if (response.status === 403) {
+                throw new Error(
+                    `Google Drive denied the upload (403). Confirm dr.mrinal@qurist.in has Editor access to the doctor folder ` +
+                    `(${folderId}) and allow Google Drive access when prompted. Details: ${errorText}`
+                );
+            }
+
             throw new Error(`Failed to upload file: ${response.status} ${errorText}`);
         }
 

@@ -2322,7 +2322,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 window.accessToken = null;
             }
-            await window.getAccessToken();
+            await window.getAccessToken({ prompt: 'consent' });
 
             // Upload the PDF to Google Drive (required).
             // If link fetch fails, `uploadPdfToDrive()` returns an empty string but the upload is still successful.
