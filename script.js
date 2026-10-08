@@ -136,6 +136,7 @@ function applyAppConfig(config, meta = {}) {
         updatedAt: meta.updatedAt || ''
     };
     renderConfigDrivenFields();
+    updateNotesIfDefault();
     updateAdminVisibility();
     updateAdminStatus();
 }
@@ -1579,6 +1580,7 @@ async function handleCredentialResponse(response) {
             loadCachedAppConfig(false);
         }
 
+        resetForm();
         setDoctorSelectionForCurrentUser();
 
         // Display login success and show app
@@ -1804,11 +1806,11 @@ function getDefaultNotes(gender = '', medications = []) {
             'Limit to only one type of CBD product within a 24-hour period.',
             'Ensure fresh drinking water is available and let your pet rest after dosing.'
         ];
-        return noteConfig.map(formatBulletNote).join('\n');
+        return noteConfig.map(formatBulletNote).filter(Boolean).join('\n');
     }
 
     const noteConfig = appConfig.defaultNotes || {};
-    const baseNotes = (noteConfig.base || []).map(formatBulletNote);
+    const baseNotes = (noteConfig.base || []).map(formatBulletNote).filter(Boolean);
 
     // Add pregnancy note only for female patients
     if (gender.toLowerCase() === 'female' && noteConfig.female) {
@@ -1824,11 +1826,17 @@ function getDefaultNotes(gender = '', medications = []) {
 
     // Add conditional rest instructions
     if (hasOils) {
-        (noteConfig.oil || []).forEach(note => baseNotes.push(formatBulletNote(note)));
+        (noteConfig.oil || []).forEach(note => {
+            const formatted = formatBulletNote(note);
+            if (formatted) baseNotes.push(formatted);
+        });
     }
 
     if (hasPillsOrGummies) {
-        (noteConfig.pillsOrGummies || []).forEach(note => baseNotes.push(formatBulletNote(note)));
+        (noteConfig.pillsOrGummies || []).forEach(note => {
+            const formatted = formatBulletNote(note);
+            if (formatted) baseNotes.push(formatted);
+        });
     }
 
     return baseNotes.join('\n');
@@ -1840,6 +1848,72 @@ function formatBulletNote(note) {
         return '';
     }
     return trimmed.startsWith('•') ? trimmed : `• ${trimmed}`;
+}
+
+function isCurrentNotesDefault(currentNotes) {
+    if (!currentNotes || !currentNotes.trim()) {
+        return false;
+    }
+
+    const cleanText = currentNotes.replace(/^[•\s\-\*]+/gm, '').toLowerCase();
+
+    // Human default anchors
+    const humanAnchors = [
+        'do not combine with alcohol',
+        'store securely away from children',
+        'inform your treating physician',
+        'follow sleep hygiene',
+        'limit yourself to only one type of cbd product',
+        'maintain age-appropriate healthy nutrition'
+    ];
+
+    // Vet default anchors
+    const vetAnchors = [
+        'give only as directed',
+        'do not combine with sedatives',
+        'store securely away from children and other pets',
+        'treating veterinarian',
+        'limit to only one type of cbd product',
+        'fresh drinking water is available'
+    ];
+
+    const humanMatchCount = humanAnchors.filter(anchor => cleanText.includes(anchor)).length;
+    const vetMatchCount = vetAnchors.filter(anchor => cleanText.includes(anchor)).length;
+    if (humanMatchCount >= 2 || vetMatchCount >= 2) {
+        return true;
+    }
+
+    if (appConfig && appConfig.defaultNotes && Array.isArray(appConfig.defaultNotes.base) && appConfig.defaultNotes.base.length > 0) {
+        const activeAnchors = appConfig.defaultNotes.base
+            .map(n => String(n || '').replace(/^[•\s\-\*]+/, '').trim().toLowerCase())
+            .filter(Boolean)
+            .slice(0, 3);
+        const activeMatchCount = activeAnchors.filter(anchor => anchor && cleanText.includes(anchor)).length;
+        if (activeMatchCount >= Math.min(2, activeAnchors.length)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function updateNotesIfDefault(force = false) {
+    const notesTextarea = document.getElementById('notes');
+    if (!notesTextarea) {
+        return;
+    }
+
+    const currentNotes = notesTextarea.value;
+    const gender = document.getElementById('patientGender') ? document.getElementById('patientGender').value : '';
+    const medicationSelects = document.querySelectorAll('.medication-name');
+    const selectedMeds = Array.from(medicationSelects)
+        .map(select => select.value)
+        .filter(value => value);
+
+    if (force || !currentNotes.trim() || isCurrentNotesDefault(currentNotes)) {
+        notesTextarea.value = getDefaultNotes(gender, selectedMeds);
+        autoResizeTextArea(notesTextarea);
+    }
 }
 
 // Add this function outside the DOMContentLoaded listener
@@ -1884,8 +1958,7 @@ function resetForm() {
     document.getElementById('date').value = today;
 
     // Reset notes to default (without gender since it's been reset)
-    document.getElementById('notes').value = getDefaultNotes();
-    autoResizeTextArea(document.getElementById('notes'));
+    updateNotesIfDefault(true);
 
     // Remove all medication entries except the first one
     const medicationsContainer = document.getElementById('medicationsContainer');
@@ -1922,29 +1995,7 @@ function resetForm() {
 
 // Add function to update notes based on selected medications
 function updateNotesBasedOnMedications() {
-    if (isVetMode) {
-        return;
-    }
-    const gender = document.getElementById('patientGender').value;
-    const medicationSelects = document.querySelectorAll('.medication-name');
-    const selectedMeds = Array.from(medicationSelects)
-        .map(select => select.value)
-        .filter(value => value); // Remove empty values
-
-    // Only update if notes appear to be in the default state
-    const currentNotes = document.getElementById('notes').value;
-    const notesTextarea = document.getElementById('notes');
-
-    const baseNotes = (appConfig.defaultNotes && appConfig.defaultNotes.base) || [];
-    const defaultAnchors = baseNotes.slice(0, 2).map(formatBulletNote);
-    const looksLikeDefaultNotes = defaultAnchors.length === 0 ||
-        defaultAnchors.every(note => currentNotes.includes(note));
-
-    // Only replace notes if the doctor has not moved away from the default note template.
-    if (looksLikeDefaultNotes) {
-        notesTextarea.value = getDefaultNotes(gender, selectedMeds);
-        autoResizeTextArea(notesTextarea);
-    }
+    updateNotesIfDefault();
 }
 
 // Add loading overlay utility functions
@@ -2126,6 +2177,7 @@ document.addEventListener('DOMContentLoaded', function () {
             isVetMode = false;
             document.body.classList.remove('vet-mode');
             loadCachedAppConfig(false);
+            resetForm();
             if (loginTitle) loginTitle.textContent = 'Doctor Login';
             if (loginSubtitle) loginSubtitle.textContent = 'Please sign in with your Qurist doctor account to continue';
             if (loginRoleSelection) loginRoleSelection.style.display = 'none';
@@ -2142,6 +2194,7 @@ document.addEventListener('DOMContentLoaded', function () {
             isVetMode = true;
             document.body.classList.add('vet-mode');
             loadCachedAppConfig(true);
+            resetForm();
             if (loginTitle) loginTitle.textContent = 'Veterinarian Login';
             if (loginSubtitle) loginSubtitle.textContent = 'Please sign in with your Qurist veterinarian account to continue';
             if (loginRoleSelection) loginRoleSelection.style.display = 'none';
