@@ -3,7 +3,7 @@ let currentUser = null;
 let isVetMode = false;
 let selectedLoginRole = 'doctor';
 const DOCTOR_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in', 'dr.vismaya@qurist.in', 'dr.mrinal@qurist.in'];
-const VET_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in', 'vet@qurist.in', 'dr.vet@qurist.in'];
+const VET_EMAILS = ['vet@qurist.in', 'rohityenukoti@qurist.in'];
 const ALLOWED_EMAILS = DOCTOR_EMAILS;
 const ADMIN_EMAILS = ['rohit@qurist.in', 'rohityenukoti@qurist.in', 'samisht@qurist.in', 'shivam@qurist.in', 'hello@qurist.in'];
 const CONFIG_CACHE_KEY = 'quristAppConfig';
@@ -68,7 +68,7 @@ const ADMIN_OPTION_EDITORS = {
 function isEmailAllowed(email, allowedEmails) {
     return allowedEmails.some(
         allowed => allowed.toLowerCase() === email ||
-        email.includes(allowed.split('@')[0].toLowerCase())
+            email.includes(allowed.split('@')[0].toLowerCase())
     );
 }
 
@@ -829,14 +829,14 @@ function readSignatureFile(fileInput, row, editorId) {
     }
 
     const reader = new FileReader();
-    reader.onload = function() {
+    reader.onload = function () {
         signatureInput.value = reader.result || '';
         if (signatureStatus) {
             signatureStatus.textContent = file.name;
         }
         syncAdminOptionEditorToTextarea(editorId);
     };
-    reader.onerror = function() {
+    reader.onerror = function () {
         if (signatureStatus) {
             signatureStatus.textContent = 'Could not read file';
         }
@@ -894,7 +894,7 @@ function initializeAdminOptionEditors() {
             toggleButton.remove();
         }
 
-        toggleButton.addEventListener('click', function() {
+        toggleButton.addEventListener('click', function () {
             if (panel.hidden) {
                 renderAdminOptionEditorRows(id);
                 panel.hidden = false;
@@ -910,7 +910,7 @@ function initializeAdminOptionEditors() {
             }
         });
 
-        addButton.addEventListener('click', function() {
+        addButton.addEventListener('click', function () {
             const emptyState = rowsContainer.querySelector('.admin-option-empty');
             if (emptyState) {
                 emptyState.remove();
@@ -932,17 +932,17 @@ function initializeAdminOptionEditors() {
             }
         });
 
-        rowsContainer.addEventListener('input', function() {
+        rowsContainer.addEventListener('input', function () {
             syncAdminOptionEditorToTextarea(id);
         });
-        rowsContainer.addEventListener('change', function(event) {
+        rowsContainer.addEventListener('change', function (event) {
             if (event.target.classList.contains('admin-signature-file')) {
                 readSignatureFile(event.target, event.target.closest('.admin-option-row'), id);
                 return;
             }
             syncAdminOptionEditorToTextarea(id);
         });
-        rowsContainer.addEventListener('click', async function(event) {
+        rowsContainer.addEventListener('click', async function (event) {
             if (event.target.classList.contains('admin-doctor-edit-btn')) {
                 const row = event.target.closest('.admin-option-row-doctor');
                 const details = row ? row.querySelector('.admin-doctor-details') : null;
@@ -1341,8 +1341,8 @@ function updateAdminStatus() {
     const sourceLabel = appConfigMeta.source === 'google-sheet'
         ? 'Google Sheets'
         : appConfigMeta.source === 'cache'
-        ? 'cached settings'
-        : 'default app settings';
+            ? 'cached settings'
+            : 'default app settings';
     status.textContent = `Using ${sourceLabel}.${updatedText}`;
     status.style.display = currentUser && currentUser.isAdmin ? 'block' : 'none';
 }
@@ -1408,10 +1408,10 @@ async function handleCredentialResponse(response) {
     // Decode the credential response
     const credential = parseJwt(response.credential);
     console.log("Decoded credential:", credential);
-    
+
     // Convert to lowercase for case-insensitive comparison
     const email = credential.email.toLowerCase();
-    
+
     const isAdmin = isEmailAllowed(email, ADMIN_EMAILS);
     const isVetRole = selectedLoginRole === 'vet';
 
@@ -1457,7 +1457,7 @@ async function handleCredentialResponse(response) {
             isVet: isVetRole,
             isAdmin
         };
-        
+
         if (isVetMode) {
             document.body.classList.add('vet-mode');
             applyAppConfig({}, { isVet: true });
@@ -1467,14 +1467,14 @@ async function handleCredentialResponse(response) {
         }
 
         setDoctorSelectionForCurrentUser();
-        
+
         // Display login success and show app
         document.getElementById('loginMessage').textContent = 'Login successful!';
         document.getElementById('loginMessage').className = 'login-message success';
-        
+
         // Set user email in the header
         document.getElementById('userEmail').textContent = email;
-        
+
         // Hide login overlay and show app after a short delay
         setTimeout(() => {
             document.getElementById('loginOverlay').style.display = 'none';
@@ -1490,7 +1490,7 @@ async function handleCredentialResponse(response) {
             : 'Access denied. Only authorized doctors can use this application.';
         document.getElementById('loginMessage').className = 'login-message error';
         currentUser = null;
-        
+
         // Retry Google Sign In
         google.accounts.id.prompt();
     }
@@ -1500,7 +1500,7 @@ async function handleCredentialResponse(response) {
 function parseJwt(token) {
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function (c) {
         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
 
@@ -1514,7 +1514,7 @@ function logout() {
     isVetMode = false;
     selectedLoginRole = 'doctor';
     document.body.classList.remove('vet-mode');
-    
+
     const roleSelection = document.getElementById('loginRoleSelection');
     const signInStep = document.getElementById('loginSignInStep');
     if (roleSelection) roleSelection.style.display = 'block';
@@ -1523,20 +1523,20 @@ function logout() {
     // Reset the doctor select
     document.getElementById('doctorSelect').value = '';
     document.getElementById('doctorSelect').disabled = false;
-    
+
     // Show login overlay and hide app
     document.getElementById('loginOverlay').style.display = 'flex';
     document.getElementById('appContainer').style.display = 'none';
     closeAdminPanel();
-    
+
     // Reset login message
     document.getElementById('loginMessage').textContent = '';
     document.getElementById('loginMessage').className = 'login-message';
-    
+
     // Clear form if needed
     resetForm();
     updateAdminVisibility();
-    
+
     // Sign out from Google
     google.accounts.id.disableAutoSelect();
 }
@@ -1551,17 +1551,17 @@ function initializeGoogleAuth() {
     // 4. Create OAuth client ID (Web application type)
     // 5. Add your app's URL to the Authorized JavaScript origins
     const CLIENT_ID = "135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleusercontent.com";
-    
+
     google.accounts.id.initialize({
         client_id: CLIENT_ID,
         callback: handleCredentialResponse
     });
-    
+
     // Display the Sign In button
     google.accounts.id.renderButton(
         document.querySelector(".g_id_signin"),
-        { 
-            theme: "outline", 
+        {
+            theme: "outline",
             size: "large",
             type: "standard",
             shape: "rectangular",
@@ -1610,13 +1610,13 @@ function updateDosageOptions(medicationSelect) {
         medicationEntry.querySelector('.form-group:nth-child(2)').appendChild(customDosageTextarea);
 
         // Add auto-resize listener
-        customDosageTextarea.addEventListener('input', function() {
+        customDosageTextarea.addEventListener('input', function () {
             autoResizeTextArea(this);
         });
     }
 
     // Add change listener to the dosage select
-    dosageSelect.onchange = function() {
+    dosageSelect.onchange = function () {
         if (this.value === 'custom') {
             customDosageTextarea.style.display = 'block';
             customDosageTextarea.focus();
@@ -1632,10 +1632,10 @@ function updateDosageOptions(medicationSelect) {
 function updateInstructionOptions(medicationSelect) {
     const instructionsContainer = medicationSelect.parentElement.parentElement.querySelector('.instructions-container');
     const selectedMed = medicationSelect.value;
-    
+
     // Clear existing options
     instructionsContainer.querySelector('.instructions-checklist').innerHTML = '';
-    
+
     const instructions = getInstructionOptionsForMedication(selectedMed);
 
     const checklistDiv = instructionsContainer.querySelector('.instructions-checklist');
@@ -1656,11 +1656,11 @@ function addPageContinuationText(doc, pageNum, totalPages) {
         doc.setFont('helvetica', 'italic');
         doc.setFontSize(10);
         doc.setTextColor(128, 128, 128); // Gray color
-        
+
         // Add a subtle line
         doc.setDrawColor(200, 200, 200); // Light gray
         doc.line(20, doc.internal.pageSize.height - 25, 190, doc.internal.pageSize.height - 25);
-        
+
         // Add continuation text
         doc.text(
             'Continued on next page...',
@@ -1668,7 +1668,7 @@ function addPageContinuationText(doc, pageNum, totalPages) {
             doc.internal.pageSize.height - 20,
             { align: 'center' }
         );
-        
+
         // Add page numbers
         doc.text(
             `Page ${pageNum} of ${totalPages}`,
@@ -1695,28 +1695,28 @@ function getDefaultNotes(gender = '', medications = []) {
 
     const noteConfig = appConfig.defaultNotes || {};
     const baseNotes = (noteConfig.base || []).map(formatBulletNote);
-    
+
     // Add pregnancy note only for female patients
     if (gender.toLowerCase() === 'female' && noteConfig.female) {
         baseNotes.splice(3, 0, formatBulletNote(noteConfig.female));
     }
-    
+
     const hasOils = medications.some(med => getMedicationType(med) === 'oil');
-    
+
     const hasPillsOrGummies = medications.some(med => {
         const type = getMedicationType(med);
         return type === 'pills' || type === 'gummies';
     });
-    
+
     // Add conditional rest instructions
     if (hasOils) {
         (noteConfig.oil || []).forEach(note => baseNotes.push(formatBulletNote(note)));
     }
-    
+
     if (hasPillsOrGummies) {
         (noteConfig.pillsOrGummies || []).forEach(note => baseNotes.push(formatBulletNote(note)));
     }
-    
+
     return baseNotes.join('\n');
 }
 
@@ -1738,7 +1738,7 @@ function resetForm() {
         // If user is logged in, keep their configured doctor selection.
         setDoctorSelectionForCurrentUser();
     }
-    
+
     // Reset patient information
     document.getElementById('orderId').value = '';
     document.getElementById('patientName').value = '';
@@ -1748,7 +1748,7 @@ function resetForm() {
     document.getElementById('heightUnit').value = 'ft';
     document.getElementById('heightConverted').textContent = 'Enter in format: feet.inches (e.g., 5.11 for 5feet 11inches)';
     document.getElementById('patientWeight').value = '';
-    
+
     // Reset medical information
     document.getElementById('complaints').value = '';
     // Uncheck all complaints checkboxes
@@ -1759,24 +1759,24 @@ function resetForm() {
     document.getElementById('ongoingMedications').value = '';
     document.getElementById('previousCannabis').value = '';
     document.getElementById('diagnosis').value = '';
-    
+
     // Reset follow-up
     document.getElementById('followUpType').value = '';
     document.getElementById('customFollowUpDate').value = '';
     document.getElementById('customFollowUpDate').style.display = 'none';
-    
+
     // Reset date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
-    
+
     // Reset notes to default (without gender since it's been reset)
     document.getElementById('notes').value = getDefaultNotes();
     autoResizeTextArea(document.getElementById('notes'));
-    
+
     // Remove all medication entries except the first one
     const medicationsContainer = document.getElementById('medicationsContainer');
     const medicationEntries = medicationsContainer.querySelectorAll('.medication-entry');
-    
+
     // Keep the first entry but reset it
     if (medicationEntries.length > 0) {
         const firstEntry = medicationEntries[0];
@@ -1816,11 +1816,11 @@ function updateNotesBasedOnMedications() {
     const selectedMeds = Array.from(medicationSelects)
         .map(select => select.value)
         .filter(value => value); // Remove empty values
-    
+
     // Only update if notes appear to be in the default state
     const currentNotes = document.getElementById('notes').value;
     const notesTextarea = document.getElementById('notes');
-    
+
     const baseNotes = (appConfig.defaultNotes && appConfig.defaultNotes.base) || [];
     const defaultAnchors = baseNotes.slice(0, 2).map(formatBulletNote);
     const looksLikeDefaultNotes = defaultAnchors.length === 0 ||
@@ -1837,11 +1837,11 @@ function updateNotesBasedOnMedications() {
 function showLoadingOverlay(message = 'Processing...') {
     const overlay = document.getElementById('loadingOverlay');
     const messageEl = document.getElementById('loadingMessage');
-    
+
     if (messageEl) {
         messageEl.textContent = message;
     }
-    
+
     if (overlay) {
         overlay.classList.add('show');
     }
@@ -1849,7 +1849,7 @@ function showLoadingOverlay(message = 'Processing...') {
 
 function hideLoadingOverlay() {
     const overlay = document.getElementById('loadingOverlay');
-    
+
     if (overlay) {
         overlay.classList.remove('show');
     }
@@ -1857,7 +1857,7 @@ function hideLoadingOverlay() {
 
 function updateLoadingMessage(message) {
     const messageEl = document.getElementById('loadingMessage');
-    
+
     if (messageEl) {
         messageEl.textContent = message;
     }
@@ -1947,35 +1947,35 @@ async function copyPrescriptionLink() {
 }
 
 // Wait for the DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     loadCachedAppConfig();
     renderConfigDrivenFields();
 
     // Initialize Google authentication
-    window.onload = function() {
+    window.onload = function () {
         initializeGoogleAuth();
     };
-    
+
     // Scroll to Top Button functionality
     const scrollToTopBtn = document.getElementById('scrollToTopBtn');
-    
+
     // Show/hide scroll to top button based on scroll position
-    window.addEventListener('scroll', function() {
+    window.addEventListener('scroll', function () {
         if (window.pageYOffset > 300) {
             scrollToTopBtn.classList.add('show');
         } else {
             scrollToTopBtn.classList.remove('show');
         }
     });
-    
+
     // Scroll to top when button is clicked
-    scrollToTopBtn.addEventListener('click', function() {
+    scrollToTopBtn.addEventListener('click', function () {
         window.scrollTo({
             top: 0,
             behavior: 'smooth'
         });
     });
-    
+
     // Initialize height converter
     setupHeightConverter();
 
@@ -1990,7 +1990,7 @@ document.addEventListener('DOMContentLoaded', function() {
         closeSuccessBtn.addEventListener('click', hideSuccessLightbox);
     }
     if (successOverlay) {
-        successOverlay.addEventListener('click', function(e) {
+        successOverlay.addEventListener('click', function (e) {
             if (e.target === successOverlay) {
                 hideSuccessLightbox();
             }
@@ -2045,9 +2045,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
+
     // Add event listener for logout button
-    document.getElementById('logoutBtn').addEventListener('click', function() {
+    document.getElementById('logoutBtn').addEventListener('click', function () {
         logout();
     });
 
@@ -2071,13 +2071,13 @@ document.addEventListener('DOMContentLoaded', function() {
         closeAdminFooterBtn.addEventListener('click', closeAdminPanel);
     }
     if (adminModal) {
-        adminModal.addEventListener('click', function(event) {
+        adminModal.addEventListener('click', function (event) {
             if (event.target === adminModal) {
                 closeAdminPanel();
             }
         });
     }
-    document.addEventListener('keydown', function(event) {
+    document.addEventListener('keydown', function (event) {
         if (event.key === 'Escape') {
             const confirmOverlay = document.getElementById('adminRemoveConfirmLightbox');
             if (confirmOverlay && confirmOverlay.classList.contains('show')) {
@@ -2097,14 +2097,14 @@ document.addEventListener('DOMContentLoaded', function() {
         closeVersionHistoryBtn.addEventListener('click', closeAdminVersionHistory);
     }
     if (versionHistoryOverlay) {
-        versionHistoryOverlay.addEventListener('click', function(event) {
+        versionHistoryOverlay.addEventListener('click', function (event) {
             if (event.target === versionHistoryOverlay) {
                 closeAdminVersionHistory();
             }
         });
     }
     if (versionHistoryList) {
-        versionHistoryList.addEventListener('click', async function(event) {
+        versionHistoryList.addEventListener('click', async function (event) {
             const restoreButton = event.target.closest('.admin-version-restore-btn');
             if (!restoreButton) {
                 return;
@@ -2139,7 +2139,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     if (saveAdminConfigBtn) {
-        saveAdminConfigBtn.addEventListener('click', async function() {
+        saveAdminConfigBtn.addEventListener('click', async function () {
             clearAdminMessage();
             const nextConfig = buildConfigFromAdminForm();
             const errors = validateAdminConfig(nextConfig);
@@ -2172,9 +2172,9 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeAdminOptionEditors();
     updateAdminVisibility();
     updateAdminStatus();
-    
+
     // Check authentication before allowing certain actions
-    const checkAuth = function(event, action) {
+    const checkAuth = function (event, action) {
         if (!currentUser) {
             event.preventDefault();
             alert('You must be logged in to perform this action.');
@@ -2182,13 +2182,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return true;
     };
-    
+
     // Set default date to today
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('date').value = today;
-    
+
     // Add event listener for follow-up type
-    document.getElementById('followUpType').addEventListener('change', function() {
+    document.getElementById('followUpType').addEventListener('change', function () {
         const customDateField = document.getElementById('customFollowUpDate');
         if (this.value === 'custom') {
             customDateField.style.display = 'block';
@@ -2197,10 +2197,10 @@ document.addEventListener('DOMContentLoaded', function() {
             customDateField.style.display = 'none';
         }
     });
-    
+
     const complaintsChecklistDiv = document.querySelector('.complaints-checklist');
     // Add event listener for complaints checkboxes
-    complaintsChecklistDiv.addEventListener('change', function(e) {
+    complaintsChecklistDiv.addEventListener('change', function (e) {
         if (e.target.type === 'checkbox') {
             const textArea = document.getElementById('complaints');
             const selectedComplaints = Array.from(this.querySelectorAll('input:checked'))
@@ -2210,20 +2210,20 @@ document.addEventListener('DOMContentLoaded', function() {
             autoResizeTextArea(textArea);
         }
     });
-    
+
     // Set default notes (initially without gender or medications)
     document.getElementById('notes').value = getDefaultNotes();
     autoResizeTextArea(document.getElementById('notes'));
-    
+
     // Add a change listener to update notes when gender is changed
-    document.getElementById('patientGender').addEventListener('change', function() {
+    document.getElementById('patientGender').addEventListener('change', function () {
         updateNotesBasedOnMedications();
     });
-    
+
     // Add event listener to the "Add Another Medication" button
-    document.getElementById('addMedicationBtn').addEventListener('click', function() {
+    document.getElementById('addMedicationBtn').addEventListener('click', function () {
         medicationCounter++;
-        
+
         // Create a new medication entry
         const medicationEntry = document.createElement('div');
         medicationEntry.className = 'medication-entry';
@@ -2248,18 +2248,18 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             <button type="button" class="remove-medication-btn">Remove</button>
         `;
-        
+
         // Add the new medication entry to the container
         document.getElementById('medicationsContainer').appendChild(medicationEntry);
         renderMedicationOptions(medicationEntry.querySelector('.medication-name'));
-        
+
         // Add event listener to the remove button
-        medicationEntry.querySelector('.remove-medication-btn').addEventListener('click', function() {
+        medicationEntry.querySelector('.remove-medication-btn').addEventListener('click', function () {
             medicationEntry.remove();
         });
 
         // Add event listener for checkboxes
-        medicationEntry.querySelector('.instructions-checklist').addEventListener('change', function(e) {
+        medicationEntry.querySelector('.instructions-checklist').addEventListener('change', function (e) {
             if (e.target.type === 'checkbox') {
                 const textArea = this.parentElement.querySelector('.instructions-text');
                 const selectedInstructions = Array.from(this.querySelectorAll('input:checked'))
@@ -2273,25 +2273,25 @@ document.addEventListener('DOMContentLoaded', function() {
         // After creating new medication entry, add listeners to its textareas
         const newTextareas = medicationEntry.querySelectorAll('textarea');
         newTextareas.forEach(textarea => {
-            textarea.addEventListener('input', function() {
+            textarea.addEventListener('input', function () {
                 autoResizeTextArea(this);
             });
         });
 
         // After adding a new medication, we need to add the change listener to its select
-        medicationEntry.querySelector('.medication-name').addEventListener('change', function() {
+        medicationEntry.querySelector('.medication-name').addEventListener('change', function () {
             updateNotesBasedOnMedications();
         });
     });
-    
+
     // Add event listener to the "Generate Prescription" button
-    document.getElementById('generatePdfBtn').addEventListener('click', function(event) {
+    document.getElementById('generatePdfBtn').addEventListener('click', function (event) {
         // Check if user is authenticated
         if (!currentUser || !currentUser.isDoctor) {
             alert('You must be logged in as an authorized doctor to generate prescriptions.');
             return;
         }
-        
+
         const doctorSelect = document.getElementById('doctorSelect').value;
         if (!doctorSelect) {
             alert('Please select a doctor to generate the prescription. This is required for the signature and seal.');
@@ -2299,24 +2299,24 @@ document.addEventListener('DOMContentLoaded', function() {
             generatePrescriptionPDF();
         }
     });
-    
+
     // Add event listener for Save to Google Sheets button
-    document.getElementById('saveToSheetsBtn').addEventListener('click', async function(event) {
+    document.getElementById('saveToSheetsBtn').addEventListener('click', async function (event) {
         // Check if user is authenticated
         if (!currentUser || !currentUser.isDoctor) {
             alert('You must be logged in as an authorized doctor to save prescriptions to Google Sheets.');
             return;
         }
-        
+
         const button = this;
         const originalText = button.textContent;
-        
+
         try {
             console.log('Save to Sheets button clicked');
-            
+
             // Show loading overlay instead of just changing button text
             showLoadingOverlay('Preparing data...');
-            
+
             // Disable the button
             button.disabled = true;
 
@@ -2412,10 +2412,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Update message to show PDF generation is starting
             updateLoadingMessage('Generating PDF document...');
-            
+
             // Generate the PDF and get the blob
             const pdfBlob = generatePrescriptionPDF(true);
-            
+
             if (!pdfBlob) {
                 throw new Error('Failed to generate PDF');
             }
@@ -2427,7 +2427,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Update message for Google authentication
             updateLoadingMessage('Authenticating with Google services...');
-            
+
             // Ensure we're authenticated with Google before uploading
             // If the session was idle for a while, force a new token request
             // Force token refresh (sheets.js keeps `accessToken` in a lexical scope, not `window.accessToken`)
@@ -2448,7 +2448,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const extra = folderUrl ? `\n\nOpen Drive folder to find it:\n${folderUrl}` : '';
                 alert(`PDF uploaded to Drive, but the share link could not be fetched in the browser.${extra}\n\nThe sheet row will be saved without the PDF link.`);
             }
-            
+
             // Save data to Google Sheets (always attempt)
             if (!pdfUrl) {
                 updateLoadingMessage('Saving prescription data to Google Sheets...');
@@ -2456,7 +2456,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateLoadingMessage('Saving prescription data to Google Sheets (with PDF link)...');
             }
             await savePrescriptionToSheet(prescriptionData, pdfUrl);
-            
+
             // Final confirmation message
             updateLoadingMessage('Finalizing...');
             setTimeout(() => {
@@ -2474,7 +2474,7 @@ document.addEventListener('DOMContentLoaded', function() {
             button.disabled = false;
         }
     });
-    
+
     // Function to generate the prescription PDF
     function generatePrescriptionPDF(returnBlob = false) {
         // Check authentication status
@@ -2482,12 +2482,12 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('You must be logged in as an authorized doctor to generate prescriptions.');
             return null;
         }
-        
+
         // Get form data - automatically use authenticated doctor
         const doctorSelect = document.getElementById('doctorSelect').value;
-        
+
         const selectedDoctor = getDoctorConfig(doctorSelect) || {};
-        
+
         // Get other form data
         const orderId = document.getElementById('orderId').value;
         const patientName = document.getElementById('patientName').value;
@@ -2495,7 +2495,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const patientGender = document.getElementById('patientGender').value;
         const patientHeight = getHeightInCm();
         const patientWeight = document.getElementById('patientWeight').value;
-        
+
         const complaints = document.getElementById('complaints').value;
         const comorbidities = document.getElementById('comorbidities').value || 'None';
         const ongoingMedications = document.getElementById('ongoingMedications').value || 'None';
@@ -2503,7 +2503,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const diagnosis = document.getElementById('diagnosis').value || 'None';
         const notes = document.getElementById('notes').value;
         const date = document.getElementById('date').value || new Date().toISOString().split('T')[0];
-        
+
         // Get follow-up information
         const followUpType = document.getElementById('followUpType').value;
         let followUpText = '';
@@ -2525,11 +2525,11 @@ document.addEventListener('DOMContentLoaded', function() {
             followUpDate.setDate(followUpDate.getDate() + 30);
             followUpText = `Follow up consultation on ${formatDate(followUpDate.toISOString().split('T')[0])}`;
         }
-        
+
         // Get medications (updated to use display names)
         const medications = [];
         const medicationEntries = document.querySelectorAll('.medication-entry');
-        
+
         medicationEntries.forEach(entry => {
             const medicationSelect = entry.querySelector('.medication-name');
             const selectedName = medicationSelect.value;
@@ -2563,13 +2563,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 instructions
             });
         });
-        
+
         // Create PDF using jsPDF
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({
             compress: true // Add compression to reduce file size
         });
-        
+
         // Add header image
         const headerImg = document.getElementById('headerImage');
         if (headerImg.complete && headerImg.naturalHeight !== 0) {
@@ -2579,12 +2579,12 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.addImage(headerImg, 'PNG', 20, 10, headerWidth, headerHeight);
             const startY = headerHeight + 20;
         }
-        
+
         // Add patient info in a single line with tighter spacing
         doc.setFontSize(10);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
-        
+
         // First group: Order ID - moved to right side to give space for logo
         doc.text(`Order ID:`, 140, 25);
         doc.setFont('helvetica', 'normal');
@@ -2597,44 +2597,44 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0); // Set to black
         doc.text(`${formatDate(date)}`, 165, 32);
-        
+
         // Add horizontal line above patient information table
         doc.setDrawColor(2, 113, 128); // Use the same teal color as the headers
         doc.setLineWidth(0.5);
         doc.line(20, 40, 190, 40);
-        
+
         const patientTableBody = isVetMode ? [
             [
-                { content: "Name:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                patientName, 
-                { content: "Age:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                patientAge, 
-                { content: "Sex:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                { content: "Name:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } },
+                patientName,
+                { content: "Age:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } },
+                patientAge,
+                { content: "Sex:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } },
                 patientGender
             ],
             [
-                { content: "Weight:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                { content: "Weight:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } },
                 patientWeight ? `${patientWeight} kg` : "",
-                "", 
                 "",
-                "", 
+                "",
+                "",
                 ""
             ]
         ] : [
             [
-                { content: "Name:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                patientName, 
-                { content: "Age:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                patientAge, 
-                { content: "Sex:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                { content: "Name:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } },
+                patientName,
+                { content: "Age:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } },
+                patientAge,
+                { content: "Sex:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } },
                 patientGender
             ],
             [
-                { content: "Height:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                patientHeight ? `${patientHeight} cm` : "", 
-                { content: "Weight:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                { content: "Height:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } },
+                patientHeight ? `${patientHeight} cm` : "",
+                { content: "Weight:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } },
                 patientWeight ? `${patientWeight} kg` : "",
-                "", 
+                "",
                 ""
             ]
         ];
@@ -2658,15 +2658,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 5: { cellWidth: 35 }  // Value
             }
         });
-        
+
         // Update current Y position after the table
         let patientTableY = doc.lastAutoTable.finalY + 5;
-        
+
         // Add horizontal line below patient information table
         doc.setDrawColor(2, 113, 128); // Use the same teal color as the headers
         doc.setLineWidth(0.5);
         doc.line(20, patientTableY - 3, 190, patientTableY - 3);
-        
+
         // Add Rx symbol
         const rxImg = document.getElementById('rxImage');
         if (rxImg.complete && rxImg.naturalHeight !== 0) {
@@ -2682,7 +2682,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text(selectedDoctor.name, 145, patientTableY + 2);
         doc.setFontSize(10);
         doc.text(selectedDoctor.designation, 145, patientTableY + 7);
-        
+
         // Add complaints
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
@@ -2690,13 +2690,13 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0); // Set to black
         doc.text(complaints, 20, patientTableY + 27, { maxWidth: 170 });
-        
+
         // Create table for comorbidities and ongoing medications
         let currentY = doc.getTextDimensions(complaints, { maxWidth: 170 }).h + patientTableY + 35;
         if (comorbidities || ongoingMedications) {
             const coMedColumns = ["Comorbidities", "Ongoing Medications"];
             const coMedRows = [[comorbidities || "-", ongoingMedications || "-"]];
-            
+
             doc.autoTable({
                 head: [coMedColumns],
                 body: coMedRows,
@@ -2719,10 +2719,10 @@ document.addEventListener('DOMContentLoaded', function() {
                     1: { cellWidth: 85 }
                 }
             });
-            
+
             currentY = doc.lastAutoTable.finalY + 10;
         }
-        
+
         // Add Previous Cannabis Use section
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
@@ -2731,7 +2731,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setTextColor(0); // Set to black
         doc.text(previousCannabis || '', 140, currentY);
         currentY += 10;
-        
+
         // Add Diagnosis section
         if (diagnosis) {
             doc.setFont('helvetica', 'bold');
@@ -2742,21 +2742,21 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.text(diagnosis, 20, currentY + 7, { maxWidth: 170 });
             currentY = doc.getTextDimensions(diagnosis, { maxWidth: 170 }).h + currentY + 15;
         }
-        
+
         // Add medications with complete table handling
         doc.setFont('helvetica', 'bold');
         const recommendationsY = currentY;
-        
+
         // Check if there's enough space for the entire medications table
         const estimatedTableHeight = (medications.length + 1) * 15; // Rough estimate: header + rows
         if (recommendationsY + estimatedTableHeight > doc.internal.pageSize.height - 40) {
             doc.addPage();
             currentY = 20;
         }
-        
+
         doc.setTextColor(2, 113, 128);
         doc.text('Recommendations:', 20, currentY);
-        
+
         // Create medication table with automatic page break
         doc.autoTable({
             head: [["Medication", "Dosage", "Instructions"]],
@@ -2779,7 +2779,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 1: { cellWidth: 30 },
                 2: { cellWidth: 70 }
             },
-            willDrawPage: function(data) {
+            willDrawPage: function (data) {
                 // Add header image on new pages
                 const headerImg = document.getElementById('headerImage');
                 if (headerImg.complete && headerImg.naturalHeight !== 0) {
@@ -2788,14 +2788,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     const headerHeight = headerWidth / headerAspectRatio;
                     doc.addImage(headerImg, 'PNG', 10, 10, headerWidth, headerHeight);
                 }
-                
+
                 // Add continuation text for all pages except the last one
                 addPageContinuationText(doc, doc.internal.getNumberOfPages(), doc.internal.getNumberOfPages() + 1);
             }
         });
-        
+
         let finalY = doc.lastAutoTable.finalY + 10;
-        
+
         // Add notes if any
         if (notes) {
             // Calculate height needed for notes and footer
@@ -2803,13 +2803,13 @@ document.addEventListener('DOMContentLoaded', function() {
             const notesHeight = splitNotes.length * 5 + 15; // Height for notes + header + padding
             const footerHeight = 40; // Approximate height needed for footer
             const totalNeededHeight = notesHeight + footerHeight;
-            
+
             // Check if there's enough space for both notes and footer
             if (finalY + totalNeededHeight > doc.internal.pageSize.height - 20) {
                 doc.addPage();
                 finalY = 20;
             }
-            
+
             // Add notes on the left side
             doc.setFont('helvetica', 'bold');
             doc.setTextColor(2, 113, 128);
@@ -2817,10 +2817,10 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.setFont('helvetica', 'normal');
             doc.setTextColor(0); // Set notes text to black
             doc.text(splitNotes, 20, finalY + 7);
-            
+
             // Update finalY to be after notes
             finalY = finalY + 7 + (splitNotes.length * 5);
-            
+
             // Prefer the admin-configured signature stored in Google Sheets.
             if (selectedDoctor.signatureDataUrl) {
                 doc.addImage(
@@ -2842,14 +2842,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     doc.addImage(signatureImg, 'PNG', 150, finalY - 15, signWidth, signHeight);
                 }
             }
-            
+
             // Add seal to the right of signature
             drawDoctorSeal(doc, 185, finalY - 10, selectedDoctor);
-            
+
             doc.line(140, finalY, 190, finalY);
             doc.text(isVetMode ? "Veterinarian's Signature" : "Doctor's Signature", 165, finalY + 5, { align: 'center' });
         }
-        
+
         // Add new sections for telehealth notice, travel disclaimer, and disclaimer
         // Check if we need a new page based on available space
         const additionalSectionsHeight = 125; // Approximate height needed for all additional sections including follow-up and contact information
@@ -2857,7 +2857,7 @@ document.addEventListener('DOMContentLoaded', function() {
             doc.addPage();
             finalY = 20;
         }
-        
+
         // Add follow-up section
         const SECTION_GAP = 10;
         finalY += 15;
@@ -2876,7 +2876,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         doc.text(followUpText.replace('Follow up consultation on ', ''), 20, finalY + 7);
-        
+
         // Add telehealth consultation notice
         finalY += 7 + 5 + SECTION_GAP;
         doc.setFont('helvetica', 'bold');
@@ -2884,12 +2884,12 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Telehealth Notice:', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        const telehealthNotice = (isVetMode && appConfig.pdfText && appConfig.pdfText.telehealthNotice) 
-            ? appConfig.pdfText.telehealthNotice 
+        const telehealthNotice = (isVetMode && appConfig.pdfText && appConfig.pdfText.telehealthNotice)
+            ? appConfig.pdfText.telehealthNotice
             : (appConfig.pdfText.telehealthNotice || '');
         const splitTelehealthNotice = doc.splitTextToSize(telehealthNotice, 170);
         doc.text(splitTelehealthNotice, 20, finalY + 7);
-        
+
         // Add travel disclaimer
         finalY += 7 + (splitTelehealthNotice.length * 5) + SECTION_GAP;
         doc.setFont('helvetica', 'bold');
@@ -2900,7 +2900,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const travelDisclaimer = appConfig.pdfText.travelAdvisory || '';
         const splitTravelDisclaimer = doc.splitTextToSize(travelDisclaimer, 170);
         doc.text(splitTravelDisclaimer, 20, finalY + 7);
-        
+
         // Update finalY after travel disclaimer
         finalY += 7 + (splitTravelDisclaimer.length * 5) + SECTION_GAP;
 
@@ -2913,7 +2913,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const finalSafetyAdvisory = appConfig.pdfText.safetyAdvisory || '';
         const splitFinalSafetyAdvisory = doc.splitTextToSize(finalSafetyAdvisory, 170);
         doc.text(splitFinalSafetyAdvisory, 20, finalY + 7);
-        
+
         // Update finalY after final safety advisory
         finalY += 7 + (splitFinalSafetyAdvisory.length * 5) + SECTION_GAP;
 
@@ -2931,7 +2931,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update finalY after safety advisory
             finalY += 7 + (splitSafetyDisclaimer.length * 5) + SECTION_GAP;
         }
-        
+
         // Add Important Patient Agreement and Disclaimer
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
@@ -2941,10 +2941,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const patientAgreement = appConfig.pdfText.patientAgreement || '';
         const splitPatientAgreement = doc.splitTextToSize(patientAgreement, 170);
         doc.text(splitPatientAgreement, 20, finalY + 7);
-        
+
         // Update finalY after disclaimer before adding contact information
         finalY += 7 + (splitPatientAgreement.length * 5) + SECTION_GAP;
-        
+
         // Add Contact Information section
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(2, 113, 128);
@@ -2954,20 +2954,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const contactInformation = appConfig.pdfText.contactInformation || '';
         const splitContactInformation = doc.splitTextToSize(contactInformation, 170);
         doc.text(splitContactInformation, 20, finalY + 7);
-        
+
         finalY += 7 + (splitContactInformation.length * 5) + SECTION_GAP;
-        
+
         // Add footer image at the bottom of the last page
         const footerImg = document.getElementById('footerImage');
         if (footerImg.complete && footerImg.naturalHeight !== 0) {
             const footerAspectRatio = footerImg.naturalWidth / footerImg.naturalHeight;
             const footerWidth = 190;
             const footerHeight = footerWidth / footerAspectRatio;
-            
+
             // Only add the footer image to the very last page
             const totalPages = doc.internal.getNumberOfPages();
             doc.setPage(totalPages);
-            
+
             // Check if the content goes too close to where the footer will be
             const minFooterYPosition = doc.internal.pageSize.height - footerHeight - 10;
             if (finalY > minFooterYPosition - 20) {
@@ -2976,14 +2976,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Position footer 10 units from bottom on this new page
                 doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10,
                     footerWidth, footerHeight);
-                
+
                 // Add custom footer info below the footer image
                 addCustomFooterInfo(doc, doc.internal.pageSize.height - 10);
             } else {
                 // Position footer 10 units from bottom with sufficient space
                 doc.addImage(footerImg, 'PNG', 10, doc.internal.pageSize.height - footerHeight - 10,
                     footerWidth, footerHeight);
-                
+
                 // Add custom footer info below the footer image
                 addCustomFooterInfo(doc, doc.internal.pageSize.height - 10);
             }
@@ -2991,7 +2991,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // If no footer image exists, still add the custom footer info
             addCustomFooterInfo(doc, doc.internal.pageSize.height - 30);
         }
-        
+
         // Before saving the PDF, add the final page count
         doc.setProperties({
             title: `Prescription for ${patientName}`,
@@ -3004,7 +3004,7 @@ document.addEventListener('DOMContentLoaded', function() {
         for (let i = 1; i <= totalPages; i++) {
             doc.setPage(i);
             addPageContinuationText(doc, i, totalPages);
-            
+
             // Add custom footer to all pages except the last one (which already has it)
             if (i < totalPages) {
                 // Remove this line to keep the footer only on the last page
@@ -3021,7 +3021,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return null;
         }
     }
-    
+
     // Helper function to format date
     function formatDate(dateString) {
         const date = new Date(dateString);
@@ -3032,7 +3032,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Update the initial medication entry's checkbox listener
-    document.querySelector('.instructions-checklist').addEventListener('change', function(e) {
+    document.querySelector('.instructions-checklist').addEventListener('change', function (e) {
         if (e.target.type === 'checkbox') {
             const textArea = this.parentElement.querySelector('.instructions-text');
             const selectedInstructions = Array.from(this.querySelectorAll('input:checked'))
@@ -3045,7 +3045,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Auto-resize all textareas on input
     document.querySelectorAll('textarea').forEach(textarea => {
-        textarea.addEventListener('input', function() {
+        textarea.addEventListener('input', function () {
             autoResizeTextArea(this);
         });
         // Initial resize
@@ -3053,7 +3053,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add event listener for the Clear Form button
-    document.getElementById('clearFormBtn').addEventListener('click', function() {
+    document.getElementById('clearFormBtn').addEventListener('click', function () {
         resetForm();
         // Scroll to top after clearing form
         window.scrollTo({
@@ -3063,11 +3063,11 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Add delegation for medication changes
-    document.getElementById('medicationsContainer').addEventListener('change', function(e) {
+    document.getElementById('medicationsContainer').addEventListener('change', function (e) {
         if (e.target.classList.contains('medication-name')) {
             // Update dosage options (existing functionality)
             updateDosageOptions(e.target);
-            
+
             // Also update notes based on medications
             updateNotesBasedOnMedications();
         }
@@ -3081,39 +3081,39 @@ function drawDoctorSeal(doc, x, y, doctorInfo) {
     canvas.width = 400;
     canvas.height = 400;
     const ctx = canvas.getContext('2d');
-    
+
     // Clear canvas and set center point
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.translate(200, 200);
-    
+
     // Draw circles with adjusted sizes
     ctx.strokeStyle = '#003366';
     ctx.lineWidth = 8;
     ctx.beginPath();
     ctx.arc(0, 0, 160, 0, Math.PI * 2);
     ctx.stroke();
-    
+
     ctx.lineWidth = 4;
     ctx.beginPath();
     ctx.arc(0, 0, 140, 0, Math.PI * 2);
     ctx.stroke();
-    
+
     // Apply rotation
     ctx.rotate(Math.PI / 12);
-    
+
     // Add text with larger font sizes
     ctx.fillStyle = '#003366';
     ctx.textAlign = 'center';
-    
+
     ctx.font = 'bold 26px Arial';
     ctx.fillText(doctorInfo.name, 0, -40);
-    
+
     // Registration info
     ctx.font = '20px Arial';
     ctx.fillText(isVetMode ? 'Certified Veterinary Practitioner' : 'Certified Medical Practitioner', 0, 0);
     ctx.fillText(`Reg No: ${doctorInfo.regNo}`, 0, 40);
     ctx.fillText('Hemp Health Pvt Ltd', 0, 80);
-    
+
     // Add the canvas as an image to the PDF with the same final size
     doc.addImage(
         canvas.toDataURL('image/png'),
@@ -3144,26 +3144,26 @@ function addCustomFooterInfo(doc, y) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(9);
     doc.text(footerConfig.cin || '', doc.internal.pageSize.width / 2, adjustedY + 5, { align: 'center' });
-    
+
     // Add social media and website links with images
     const websiteText = footerConfig.website || '';
     const instagramText = footerConfig.instagram || '';
     const facebookText = footerConfig.facebook || '';
-    
+
     // Calculate positions for the three links to be evenly spaced
     const totalWidth = doc.internal.pageSize.width - 40; // leaving 20 units margin on each side
     const spacing = totalWidth / 3;
-    
+
     // Get the social media icons
     const websiteImg = document.getElementById('websiteImage');
     const instagramImg = document.getElementById('instagramImage');
     const facebookImg = document.getElementById('facebookImage');
-    
+
     // Icon size and positioning
     const iconWidth = 5;
     const iconHeight = 5;
     const iconSpacing = 2;
-    
+
     // Position for website
     if (websiteImg && websiteImg.complete && websiteImg.naturalHeight !== 0) {
         doc.addImage(websiteImg, 'PNG', 20 + spacing / 2 - 15, adjustedY + 9, iconWidth, iconHeight);
@@ -3171,7 +3171,7 @@ function addCustomFooterInfo(doc, y) {
     } else {
         doc.text('🌐 ' + websiteText, 20 + spacing / 2, adjustedY + 12, { align: 'center' });
     }
-    
+
     // Position for Instagram
     if (instagramImg && instagramImg.complete && instagramImg.naturalHeight !== 0) {
         doc.addImage(instagramImg, 'PNG', 20 + spacing + spacing / 2 - 15, adjustedY + 9, iconWidth, iconHeight);
@@ -3179,7 +3179,7 @@ function addCustomFooterInfo(doc, y) {
     } else {
         doc.text('📷 ' + instagramText, 20 + spacing + spacing / 2, adjustedY + 12, { align: 'center' });
     }
-    
+
     // Position for Facebook
     if (facebookImg && facebookImg.complete && facebookImg.naturalHeight !== 0) {
         doc.addImage(facebookImg, 'PNG', 20 + 2 * spacing + spacing / 2 - 15, adjustedY + 9, iconWidth, iconHeight);
@@ -3195,21 +3195,21 @@ function convertFeetToCm(feetStr) {
     if (!feetStr) {
         return null;
     }
-    
+
     try {
         // If it's just a number without decimal (e.g., "5"), treat it as feet with 0 inches
         if (!feetStr.includes('.')) {
             const feet = parseFloat(feetStr);
             return Math.round(feet * 30.48); // Convert just feet to cm
         }
-        
+
         const parts = feetStr.split('.');
         const feet = parseFloat(parts[0]);
         let inches = parts[1] ? parseFloat(parts[1]) : 0;
-        
+
         // No special handling needed for single digit inches
         // We want 5.7 to be treated as 5 feet 7 inches
-        
+
         // Convert to cm: 1 foot = 30.48 cm, 1 inch = 2.54 cm
         const totalCm = (feet * 30.48) + (inches * 2.54);
         return Math.round(totalCm);
@@ -3224,28 +3224,28 @@ function setupHeightConverter() {
     const heightInput = document.getElementById('patientHeight');
     const heightUnit = document.getElementById('heightUnit');
     const heightConverted = document.getElementById('heightConverted');
-    
+
     function updateHeightConversion() {
         const value = heightInput.value.trim();
-        
+
         // If the height starts with 1, treat it as centimeters automatically.
         if (value.startsWith('1') && heightUnit.value !== 'cm') {
             heightUnit.value = 'cm';
         }
-        
+
         const unit = heightUnit.value;
-        
+
         if (unit === 'ft') {
             heightConverted.textContent = 'Enter in format: feet.inches (e.g., 5.11 for 5feet 11inches)';
         } else {
             heightConverted.textContent = '';
         }
     }
-    
+
     // Add event listeners
     heightInput.addEventListener('input', updateHeightConversion);
     heightUnit.addEventListener('change', updateHeightConversion);
-    
+
     // Initialize help text based on default selection
     updateHeightConversion();
 }
@@ -3256,11 +3256,11 @@ function getHeightInCm() {
     const heightUnit = document.getElementById('heightUnit');
     const value = heightInput.value.trim();
     const unit = heightUnit.value;
-    
+
     if (!value) {
         return '';
     }
-    
+
     if (unit === 'ft') {
         const cmValue = convertFeetToCm(value);
         return cmValue ? cmValue : '';
