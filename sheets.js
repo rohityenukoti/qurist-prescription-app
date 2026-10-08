@@ -7,9 +7,58 @@ const CLIENT_ID = '135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleuser
 const APP_CONFIG_SPREADSHEET_ID = '1uBGaUf0SCkcaLTomxyzeBWn1OEBsmqHTMM3G7LSmAo0';
 const PRESCRIPTION_SPREADSHEET_FOLDER_ID = '1FAEg1SG72DoDbBDgCNe1iQO4R3EWV6Iz';
 const PRESCRIPTION_SPREADSHEET_TITLE_PREFIX = 'Prescription data';
+const VET_PRESCRIPTION_SPREADSHEET_TITLE_PREFIX = 'Vet Prescription Data';
 const PRESCRIPTION_SPREADSHEET_IDS_BY_YEAR = {
     2026: SPREADSHEET_ID
 };
+const VET_PRESCRIPTION_SPREADSHEET_IDS_BY_YEAR = {};
+const PRESCRIPTION_HEADERS = [
+    'Date',
+    'Doctor Name',
+    'Order ID',
+    'Patient Name',
+    'Age',
+    'Gender',
+    'Height',
+    'Weight',
+    'Complaints',
+    'Comorbidities',
+    'Ongoing Medications',
+    'Previous Cannabis',
+    'Diagnosis',
+    'Medications',
+    'Notes',
+    'Follow Up',
+    'PDF URL'
+];
+const VET_PRESCRIPTION_HEADERS = [
+    'Date',
+    'Doctor Name',
+    'Order ID',
+    'Pet Name',
+    'Age',
+    'Gender',
+    'Weight',
+    'Complaints',
+    'Comorbidities',
+    'Ongoing Medications',
+    'Previous Cannabis',
+    'Diagnosis',
+    'Medications',
+    'Notes',
+    'Follow Up',
+    'PDF URL'
+];
+
+function getColumnLetter(colIndex) {
+    let letter = '';
+    while (colIndex > 0) {
+        const remainder = (colIndex - 1) % 26;
+        letter = String.fromCharCode(65 + remainder) + letter;
+        colIndex = Math.floor((colIndex - 1) / 26);
+    }
+    return letter || 'A';
+}
 // IDs of folders in Google Drive where PDFs will be stored, by doctor
 const DRIVE_FOLDER_IDS = { 
     dr_rohit: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P',
@@ -393,8 +442,9 @@ function getPrescriptionYear(dateString) {
     return dateObject.getFullYear();
 }
 
-function getPrescriptionSpreadsheetTitle(year) {
-    return `${PRESCRIPTION_SPREADSHEET_TITLE_PREFIX} ${year}`;
+function getPrescriptionSpreadsheetTitle(year, isVet = false) {
+    const prefix = isVet ? VET_PRESCRIPTION_SPREADSHEET_TITLE_PREFIX : PRESCRIPTION_SPREADSHEET_TITLE_PREFIX;
+    return `${prefix} ${year}`;
 }
 
 function escapeDriveQueryValue(value) {
@@ -462,22 +512,28 @@ async function createPrescriptionSpreadsheet(title, retryCount = 0) {
     return response.json();
 }
 
-async function getPrescriptionSpreadsheetId(dateString) {
+async function getPrescriptionSpreadsheetId(dateString, isVet = false) {
     const year = getPrescriptionYear(dateString);
+    const cacheKey = `${isVet ? 'vet_' : ''}${year}`;
 
-    if (prescriptionSpreadsheetIdCache[year]) {
-        return prescriptionSpreadsheetIdCache[year];
+    if (prescriptionSpreadsheetIdCache[cacheKey]) {
+        return prescriptionSpreadsheetIdCache[cacheKey];
     }
 
-    const title = getPrescriptionSpreadsheetTitle(year);
+    if (isVet && VET_PRESCRIPTION_SPREADSHEET_IDS_BY_YEAR[year]) {
+        prescriptionSpreadsheetIdCache[cacheKey] = VET_PRESCRIPTION_SPREADSHEET_IDS_BY_YEAR[year];
+        return prescriptionSpreadsheetIdCache[cacheKey];
+    }
+
+    const title = getPrescriptionSpreadsheetTitle(year, isVet);
     const existingSpreadsheet = await findPrescriptionSpreadsheetByTitle(title);
     const spreadsheet = existingSpreadsheet || await createPrescriptionSpreadsheet(title);
 
-    prescriptionSpreadsheetIdCache[year] = spreadsheet.id;
+    prescriptionSpreadsheetIdCache[cacheKey] = spreadsheet.id;
     return spreadsheet.id;
 }
 
-async function ensureSheetExists(spreadsheetId, sheetTitle, retryCount = 0) {
+async function ensureSheetExists(spreadsheetId, sheetTitle, retryCount = 0, options = {}) {
     const spreadsheet = await fetchSpreadsheetMetadata(spreadsheetId, retryCount);
     const sheets = (spreadsheet.sheets || []).map(s => (s.properties || {}).title);
     const sheetAlreadyExists = sheets.includes(sheetTitle);
@@ -511,10 +567,20 @@ async function ensureSheetExists(spreadsheetId, sheetTitle, retryCount = 0) {
             // Refresh token and retry once
             accessToken = null;
             await getAccessToken();
-            return ensureSheetExists(spreadsheetId, sheetTitle, retryCount + 1);
+            return ensureSheetExists(spreadsheetId, sheetTitle, retryCount + 1, options);
         }
         const errorText = await addSheetResponse.text();
         throw new Error(`Failed to create sheet '${sheetTitle}': ${addSheetResponse.status} ${errorText}`);
+    }
+
+    // Initialize newly created tab with header row if provided
+    if (options && Array.isArray(options.headers) && options.headers.length > 0) {
+        try {
+            const endCol = getColumnLetter(options.headers.length);
+            await updateSheetValues(spreadsheetId, getSheetRange(sheetTitle, `A1:${endCol}1`), [options.headers]);
+        } catch (headerError) {
+            console.warn('Unable to write headers to new sheet tab:', headerError);
+        }
     }
 }
 
@@ -772,7 +838,7 @@ async function saveAppConfigToSheet(config, options = {}) {
 }
 
 // Save prescription data to Google Sheets, including PDF URL
-async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount = 0, maxRetries = 3, baseDelay = 1000) {
+async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount = 0, maxRetries = 3, baseDelay = 1000, options = {}) {
     try {
         console.log('Starting save to Google Sheets...');
         
@@ -786,39 +852,65 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount
             throw new Error('Failed to obtain access token');
         }
 
-        // Determine the yearly spreadsheet and monthly sheet title, then ensure the tab exists
-        const spreadsheetId = await getPrescriptionSpreadsheetId(prescriptionData.date);
-        const sheetTitle = getMonthlySheetTitle(prescriptionData.date);
-        await ensureSheetExists(spreadsheetId, sheetTitle);
+        const isVet = Boolean(
+            (options && options.isVet !== undefined) ? options.isVet :
+            (prescriptionData && prescriptionData.isVet !== undefined) ? prescriptionData.isVet :
+            (typeof isVetMode !== 'undefined' ? isVetMode : (window.isVetMode || false))
+        );
 
-        // Format the data for Google Sheets, now including PDF URL
-        const values = [
-            [
-                prescriptionData.date,
-                prescriptionData.doctorName,
-                prescriptionData.orderId || '',
-                prescriptionData.patientName,
-                prescriptionData.patientAge,
-                prescriptionData.patientGender,
-                prescriptionData.patientHeight || '',
-                prescriptionData.patientWeight || '',
-                prescriptionData.complaints,
-                prescriptionData.comorbidities,
-                prescriptionData.ongoingMedications,
-                prescriptionData.previousCannabis || '',
-                prescriptionData.diagnosis || '',
-                JSON.stringify(prescriptionData.medications),
-                prescriptionData.notes,
-                prescriptionData.followUp || '',
-                pdfUrl || '' // Add the PDF URL as a new column
-            ]
+        const headers = isVet ? VET_PRESCRIPTION_HEADERS : PRESCRIPTION_HEADERS;
+
+        // Determine the yearly spreadsheet and monthly sheet title, then ensure the tab exists
+        const spreadsheetId = await getPrescriptionSpreadsheetId(prescriptionData.date, isVet);
+        const sheetTitle = getMonthlySheetTitle(prescriptionData.date);
+        await ensureSheetExists(spreadsheetId, sheetTitle, 0, { headers });
+
+        // Format the data for Google Sheets (vet mode omits Height)
+        const row = isVet ? [
+            prescriptionData.date,
+            prescriptionData.doctorName,
+            prescriptionData.orderId || '',
+            prescriptionData.patientName,
+            prescriptionData.patientAge,
+            prescriptionData.patientGender,
+            prescriptionData.patientWeight || '',
+            prescriptionData.complaints,
+            prescriptionData.comorbidities,
+            prescriptionData.ongoingMedications,
+            prescriptionData.previousCannabis || '',
+            prescriptionData.diagnosis || '',
+            JSON.stringify(prescriptionData.medications),
+            prescriptionData.notes,
+            prescriptionData.followUp || '',
+            pdfUrl || '' // Add the PDF URL
+        ] : [
+            prescriptionData.date,
+            prescriptionData.doctorName,
+            prescriptionData.orderId || '',
+            prescriptionData.patientName,
+            prescriptionData.patientAge,
+            prescriptionData.patientGender,
+            prescriptionData.patientHeight || '',
+            prescriptionData.patientWeight || '',
+            prescriptionData.complaints,
+            prescriptionData.comorbidities,
+            prescriptionData.ongoingMedications,
+            prescriptionData.previousCannabis || '',
+            prescriptionData.diagnosis || '',
+            JSON.stringify(prescriptionData.medications),
+            prescriptionData.notes,
+            prescriptionData.followUp || '',
+            pdfUrl || '' // Add the PDF URL as a new column
         ];
 
-        console.log('Formatted data:', values);
-        console.log('Attempting to save data to Google Sheets...');
+        const values = [row];
+        const endCol = getColumnLetter(row.length);
 
-        // Append the data to the sheet using fetch API (expanded to include the PDF URL column)
-        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetTitle)}!A:Q:append?valueInputOption=RAW`, {
+        console.log('Formatted data:', values);
+        console.log(`Attempting to save data to Google Sheets (isVet: ${isVet}, spreadsheetId: ${spreadsheetId})...`);
+
+        // Append the data to the sheet using fetch API
+        const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(sheetTitle)}!A:${endCol}:append?valueInputOption=RAW`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
@@ -839,7 +931,7 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount
                 // Clear the expired token
                 accessToken = null;
                 // Try again with a fresh token
-                return savePrescriptionToSheet(prescriptionData, pdfUrl);
+                return savePrescriptionToSheet(prescriptionData, pdfUrl, 0, maxRetries, baseDelay, options);
             }
             
             const retryableErrors = [500, 502, 503, 504];
@@ -859,7 +951,7 @@ async function savePrescriptionToSheet(prescriptionData, pdfUrl = '', retryCount
                 await new Promise(resolve => setTimeout(resolve, delay));
                 
                 // Retry the save operation with incremented retry count
-                return savePrescriptionToSheet(prescriptionData, pdfUrl, retryCount + 1, maxRetries, baseDelay);
+                return savePrescriptionToSheet(prescriptionData, pdfUrl, retryCount + 1, maxRetries, baseDelay, options);
             }
             
             throw new Error(`HTTP error! status: ${response.status}, response: ${responseText}`);

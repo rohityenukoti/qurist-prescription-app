@@ -1,6 +1,7 @@
 // Authentication variables
 let currentUser = null;
 let isVetMode = false;
+window.isVetMode = false;
 let selectedLoginRole = 'doctor';
 const DOCTOR_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in', 'dr.vismaya@qurist.in', 'dr.mrinal@qurist.in'];
 const VET_EMAILS = ['drsatish@qurist.in', 'rohityenukoti@qurist.in'];
@@ -1563,6 +1564,7 @@ async function handleCredentialResponse(response) {
         // Valid login
         console.log(`Valid ${isVetRole ? 'veterinarian' : 'doctor'} login:`, email);
         isVetMode = isVetRole;
+        window.isVetMode = isVetRole;
         currentUser = {
             email: email,
             name: credential.name,
@@ -1627,6 +1629,7 @@ function logout() {
     // Clear user data
     currentUser = null;
     isVetMode = false;
+    window.isVetMode = false;
     selectedLoginRole = 'doctor';
     document.body.classList.remove('vet-mode');
     loadCachedAppConfig(false);
@@ -2175,6 +2178,7 @@ document.addEventListener('DOMContentLoaded', function () {
         doctorLoginBtn.addEventListener('click', () => {
             selectedLoginRole = 'doctor';
             isVetMode = false;
+            window.isVetMode = false;
             document.body.classList.remove('vet-mode');
             loadCachedAppConfig(false);
             resetForm();
@@ -2192,6 +2196,7 @@ document.addEventListener('DOMContentLoaded', function () {
         vetLoginBtn.addEventListener('click', () => {
             selectedLoginRole = 'vet';
             isVetMode = true;
+            window.isVetMode = true;
             document.body.classList.add('vet-mode');
             loadCachedAppConfig(true);
             resetForm();
@@ -2509,7 +2514,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 diagnosis: document.getElementById('diagnosis').value || 'None',
                 medications: [],
                 notes: document.getElementById('notes').value,
-                followUp: ''
+                followUp: '',
+                isVet: isVetMode
             };
 
             // Get follow-up information
@@ -2626,7 +2632,7 @@ document.addEventListener('DOMContentLoaded', function () {
             } else {
                 updateLoadingMessage('Saving prescription data to Google Sheets (with PDF link)...');
             }
-            await savePrescriptionToSheet(prescriptionData, pdfUrl);
+            await savePrescriptionToSheet(prescriptionData, pdfUrl, 0, 3, 1000, { isVet: isVetMode });
 
             // Final confirmation message
             updateLoadingMessage('Finalizing...');
