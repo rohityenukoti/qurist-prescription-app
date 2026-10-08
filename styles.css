@@ -72,6 +72,74 @@ body {
     border: 1px solid #c3e6cb;
 }
 
+/* Login role selection */
+.login-role-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.login-role-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.login-role-btn:hover {
+    border-color: #027180;
+    background: #f0fafb;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(2, 113, 128, 0.15);
+}
+
+.login-role-btn .role-icon {
+    font-size: 28px;
+    line-height: 1;
+}
+
+.login-role-btn .role-label {
+    color: #333;
+}
+
+.login-role-btn.doctor-btn:hover .role-label {
+    color: #027180;
+}
+
+.login-role-btn.vet-btn:hover .role-label {
+    color: #027180;
+}
+
+.login-back-btn {
+    background: none;
+    border: none;
+    color: #027180;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 6px 0;
+    margin-bottom: 12px;
+    font-weight: 600;
+    transition: color 0.2s;
+}
+
+.login-back-btn:hover {
+    color: #01555f;
+    text-decoration: underline;
+}
+
+/* Vet mode: hide height field and related elements */
+body.vet-mode .form-group-height {
+    display: none !important;
+}
+
 .user-info {
     display: flex;
     justify-content: flex-end;

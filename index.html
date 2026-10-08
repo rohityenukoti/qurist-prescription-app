@@ -17,16 +17,37 @@
     <div id="loginOverlay" class="login-overlay">
         <div class="login-container">
             <img src="logo.png" alt="Qurist Logo" class="login-logo">
-            <h2>Doctor Login</h2>
-            <p>Please sign in with your Qurist doctor account to continue</p>
-            <!-- IMPORTANT: You need to replace YOUR_GOOGLE_CLIENT_ID with an actual OAuth 2.0 Client ID -->
-            <!-- Get it from Google Cloud Console: https://console.cloud.google.com/ -->
-            <!-- Make sure to configure the OAuth consent screen and add both doctor emails as test users -->
-            <div id="g_id_onload"
-                 data-client_id="135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleusercontent.com"
-                 data-callback="handleCredentialResponse">
+
+            <!-- Step 1: Role selection -->
+            <div id="loginRoleSelection">
+                <h2>Welcome</h2>
+                <p>Please select your login type to continue</p>
+                <div class="login-role-buttons">
+                    <button type="button" id="doctorLoginBtn" class="login-role-btn doctor-btn">
+                        <span class="role-icon">🩺</span>
+                        <span class="role-label">Doctor Login</span>
+                    </button>
+                    <button type="button" id="vetLoginBtn" class="login-role-btn vet-btn">
+                        <span class="role-icon">🐾</span>
+                        <span class="role-label">Veterinarian Login</span>
+                    </button>
+                </div>
             </div>
-            <div class="g_id_signin" data-type="standard"></div>
+
+            <!-- Step 2: Google Sign-In (shown after role is chosen) -->
+            <div id="loginSignInStep" style="display: none;">
+                <h2 id="loginTitle">Doctor Login</h2>
+                <p id="loginSubtitle">Please sign in with your Qurist doctor account to continue</p>
+                <button type="button" id="loginBackBtn" class="login-back-btn">&larr; Back</button>
+                <!-- IMPORTANT: You need to replace YOUR_GOOGLE_CLIENT_ID with an actual OAuth 2.0 Client ID -->
+                <!-- Get it from Google Cloud Console: https://console.cloud.google.com/ -->
+                <!-- Make sure to configure the OAuth consent screen and add both doctor emails as test users -->
+                <div id="g_id_onload"
+                     data-client_id="135379719308-bqao7783qu7evcoh5skku7bopikn8dk6.apps.googleusercontent.com"
+                     data-callback="handleCredentialResponse">
+                </div>
+                <div class="g_id_signin" data-type="standard"></div>
+            </div>
             <div id="loginMessage" class="login-message"></div>
         </div>
     </div>
@@ -299,7 +320,7 @@
                         <option value="Other">Other</option>
                     </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group form-group-height">
                     <label for="patientHeight">Height:</label>
                     <div class="height-input-group">
                         <input type="text" id="patientHeight" placeholder="Enter height">

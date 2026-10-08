@@ -200,11 +200,81 @@
         return merged;
     }
 
+    // Vet-mode overrides for the pet prescription workflow.
+    const defaultVetConfig = {
+        medications: [
+            {
+                id: 'Dog CBD Oil Small',
+                label: 'Dog CBD Oil Small',
+                pdfName: 'Dog CBD Oil Small',
+                type: 'oil'
+            },
+            {
+                id: 'Dog CBD Oil Medium',
+                label: 'Dog CBD Oil Medium',
+                pdfName: 'Dog CBD Oil Medium',
+                type: 'oil'
+            },
+            {
+                id: 'Dog CBD Oil Large',
+                label: 'Dog CBD Oil Large',
+                pdfName: 'Dog CBD Oil Large',
+                type: 'oil'
+            },
+            {
+                id: 'Cat CBD Oil Small',
+                label: 'Cat CBD Oil Small',
+                pdfName: 'Cat CBD Oil Small',
+                type: 'oil'
+            },
+            {
+                id: 'Cat CBD Oil Medium',
+                label: 'Cat CBD Oil Medium',
+                pdfName: 'Cat CBD Oil Medium',
+                type: 'oil'
+            }
+        ],
+        dosageOptions: {
+            oil: [
+                { value: '0.25 ml' },
+                { value: '0.5 ml' },
+                { value: '0.75 ml' },
+                { value: '1 ml' }
+            ],
+            other: []
+        },
+        defaultNotes: {
+            // Static notes for vet prescriptions – not dynamically assembled.
+            base: [
+                'Give only as directed. Do not exceed the prescribed dose.',
+                'Do not combine with sedatives, sleeping pills, or painkillers.',
+                'Store securely away from children and other pets.',
+                'Inform your treating veterinarian about using CBD for your pet\u2019s medical condition.',
+                'Limit to only one type of CBD product within a 24-hour period.',
+                'Ensure fresh drinking water is available and let your pet rest after dosing.'
+            ],
+            // No gender-specific or medication-type-specific notes in vet mode.
+            female: '',
+            oil: [],
+            pillsOrGummies: []
+        },
+        pdfText: {
+            telehealthNotice: 'This prescription is generated on tele-consultation (no physical contact with the pet).',
+            // Occupational safety advisory is intentionally blank – not shown in pet Rx.
+            occupationalSafetyAdvisory: ''
+        }
+    };
+
     window.QURIST_DEFAULT_APP_CONFIG = defaultAppConfig;
+    window.QURIST_DEFAULT_VET_CONFIG = defaultVetConfig;
     window.cloneQuristConfig = function(config) {
         return deepClone(config || defaultAppConfig);
     };
     window.mergeQuristConfig = function(overrides) {
         return mergeConfig(defaultAppConfig, overrides);
+    };
+    window.mergeQuristVetConfig = function(overrides) {
+        const baseVet = mergeConfig(defaultAppConfig, defaultVetConfig);
+        return overrides ? mergeConfig(baseVet, overrides) : baseVet;
     };
 })();

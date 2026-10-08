@@ -1,6 +1,10 @@
 // Authentication variables
 let currentUser = null;
-const ALLOWED_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in', 'dr.vismaya@qurist.in', 'dr.mrinal@qurist.in'];
+let isVetMode = false;
+let selectedLoginRole = 'doctor';
+const DOCTOR_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in', 'dr.vismaya@qurist.in', 'dr.mrinal@qurist.in'];
+const VET_EMAILS = ['rohit@qurist.in', 'rachna@qurist.in', 'drparul@qurist.in', 'vet@qurist.in', 'dr.vet@qurist.in'];
+const ALLOWED_EMAILS = DOCTOR_EMAILS;
 const ADMIN_EMAILS = ['rohit@qurist.in', 'rohityenukoti@qurist.in', 'samisht@qurist.in', 'shivam@qurist.in', 'hello@qurist.in'];
 const CONFIG_CACHE_KEY = 'quristAppConfig';
 let appConfig = normalizeOilDosageValues(window.mergeQuristConfig ? window.mergeQuristConfig() : {});
@@ -87,7 +91,7 @@ function setCachedConfig(config, updatedAt = '') {
 }
 
 function normalizeOilDosageValues(config) {
-    if (!config || !config.dosageOptions || !Array.isArray(config.dosageOptions.oil)) {
+    if (isVetMode || !config || !config.dosageOptions || !Array.isArray(config.dosageOptions.oil)) {
         return config;
     }
 
@@ -114,9 +118,15 @@ function normalizeOilDosageValues(config) {
 }
 
 function applyAppConfig(config, meta = {}) {
-    appConfig = normalizeOilDosageValues(window.mergeQuristConfig ? window.mergeQuristConfig(config) : config);
+    const isVet = meta.isVet !== undefined ? meta.isVet : isVetMode;
+    if (isVet) {
+        appConfig = window.mergeQuristVetConfig ? window.mergeQuristVetConfig(config) : config;
+    } else {
+        appConfig = normalizeOilDosageValues(window.mergeQuristConfig ? window.mergeQuristConfig(config) : config);
+    }
+
     if (currentUser) {
-        currentUser.isDoctor = isEmailAllowed(currentUser.email, getConfiguredDoctorEmails());
+        currentUser.isDoctor = isVet ? isEmailAllowed(currentUser.email, getConfiguredVetEmails()) : isEmailAllowed(currentUser.email, getConfiguredDoctorEmails());
     }
     appConfigMeta = {
         source: meta.source || 'defaults',
@@ -176,8 +186,16 @@ function getConfiguredDoctorEmails() {
     const configEmails = (appConfig.doctors || [])
         .map(doctor => doctor.email)
         .filter(Boolean);
-    const mergedEmails = [...new Set([...configEmails, ...ALLOWED_EMAILS].map(email => email.toLowerCase()))];
-    return mergedEmails.length ? mergedEmails : ALLOWED_EMAILS;
+    const mergedEmails = [...new Set([...configEmails, ...DOCTOR_EMAILS].map(email => email.toLowerCase()))];
+    return mergedEmails.length ? mergedEmails : DOCTOR_EMAILS;
+}
+
+function getConfiguredVetEmails() {
+    const configEmails = (appConfig.doctors || [])
+        .map(doctor => doctor.email)
+        .filter(Boolean);
+    const mergedEmails = [...new Set([...configEmails, ...VET_EMAILS].map(email => email.toLowerCase()))];
+    return mergedEmails.length ? mergedEmails : VET_EMAILS;
 }
 
 function getDoctorForEmail(email) {
@@ -1394,35 +1412,60 @@ async function handleCredentialResponse(response) {
     // Convert to lowercase for case-insensitive comparison
     const email = credential.email.toLowerCase();
     
-    // Check if email is in the doctor or admin allowlists.
-    let isDoctor = isEmailAllowed(email, getConfiguredDoctorEmails());
     const isAdmin = isEmailAllowed(email, ADMIN_EMAILS);
+    const isVetRole = selectedLoginRole === 'vet';
 
-    if (!isDoctor && !isAdmin) {
-        document.getElementById('loginMessage').textContent = 'Checking latest doctor access...';
-        document.getElementById('loginMessage').className = 'login-message';
-        await loadRemoteAppConfig({ silent: true });
-        isDoctor = isEmailAllowed(email, getConfiguredDoctorEmails());
+    let isAuthorized = false;
 
-        if (!isDoctor && !isAdmin) {
-            await loadRemoteAppConfig({ silent: true, prompt: 'consent' });
-            isDoctor = isEmailAllowed(email, getConfiguredDoctorEmails());
+    if (isVetRole) {
+        isAuthorized = isEmailAllowed(email, getConfiguredVetEmails()) || isAdmin;
+        if (!isAuthorized) {
+            document.getElementById('loginMessage').textContent = 'Checking latest veterinarian access...';
+            document.getElementById('loginMessage').className = 'login-message';
+            await loadRemoteAppConfig({ silent: true });
+            isAuthorized = isEmailAllowed(email, getConfiguredVetEmails()) || isAdmin;
+
+            if (!isAuthorized) {
+                await loadRemoteAppConfig({ silent: true, prompt: 'consent' });
+                isAuthorized = isEmailAllowed(email, getConfiguredVetEmails()) || isAdmin;
+            }
+        }
+    } else {
+        isAuthorized = isEmailAllowed(email, getConfiguredDoctorEmails()) || isAdmin;
+        if (!isAuthorized) {
+            document.getElementById('loginMessage').textContent = 'Checking latest doctor access...';
+            document.getElementById('loginMessage').className = 'login-message';
+            await loadRemoteAppConfig({ silent: true });
+            isAuthorized = isEmailAllowed(email, getConfiguredDoctorEmails()) || isAdmin;
+
+            if (!isAuthorized) {
+                await loadRemoteAppConfig({ silent: true, prompt: 'consent' });
+                isAuthorized = isEmailAllowed(email, getConfiguredDoctorEmails()) || isAdmin;
+            }
         }
     }
 
-    const isAllowed = isDoctor || isAdmin;
-    
-    if (isAllowed) {
-        // Valid doctor email
-        console.log("Valid doctor login:", email);
+    if (isAuthorized) {
+        // Valid login
+        console.log(`Valid ${isVetRole ? 'veterinarian' : 'doctor'} login:`, email);
+        isVetMode = isVetRole;
         currentUser = {
             email: email,
             name: credential.name,
             picture: credential.picture,
-            isDoctor,
+            isDoctor: true,
+            isVet: isVetRole,
             isAdmin
         };
         
+        if (isVetMode) {
+            document.body.classList.add('vet-mode');
+            applyAppConfig({}, { isVet: true });
+        } else {
+            document.body.classList.remove('vet-mode');
+            applyAppConfig({}, { isVet: false });
+        }
+
         setDoctorSelectionForCurrentUser();
         
         // Display login success and show app
@@ -1440,9 +1483,11 @@ async function handleCredentialResponse(response) {
             loadRemoteAppConfig({ silent: true });
         }, 1000);
     } else {
-        // Invalid doctor email
-        console.log("Invalid doctor login attempt:", email);
-        document.getElementById('loginMessage').textContent = 'Access denied. Only authorized doctors can use this application.';
+        // Invalid login
+        console.log(`Invalid ${isVetRole ? 'veterinarian' : 'doctor'} login attempt:`, email);
+        document.getElementById('loginMessage').textContent = isVetRole
+            ? 'Access denied. Only authorized veterinarians can use this application.'
+            : 'Access denied. Only authorized doctors can use this application.';
         document.getElementById('loginMessage').className = 'login-message error';
         currentUser = null;
         
@@ -1466,7 +1511,15 @@ function parseJwt(token) {
 function logout() {
     // Clear user data
     currentUser = null;
+    isVetMode = false;
+    selectedLoginRole = 'doctor';
+    document.body.classList.remove('vet-mode');
     
+    const roleSelection = document.getElementById('loginRoleSelection');
+    const signInStep = document.getElementById('loginSignInStep');
+    if (roleSelection) roleSelection.style.display = 'block';
+    if (signInStep) signInStep.style.display = 'none';
+
     // Reset the doctor select
     document.getElementById('doctorSelect').value = '';
     document.getElementById('doctorSelect').disabled = false;
@@ -1516,9 +1569,6 @@ function initializeGoogleAuth() {
             logo_alignment: "center"
         }
     );
-    
-    // Prompt One Tap UI
-    google.accounts.id.prompt();
 }
 
 // Function to update dosage options - move this OUTSIDE the DOMContentLoaded listener
@@ -1631,6 +1681,18 @@ function addPageContinuationText(doc, pageNum, totalPages) {
 
 // Add this function outside the DOMContentLoaded listener
 function getDefaultNotes(gender = '', medications = []) {
+    if (isVetMode) {
+        const noteConfig = (appConfig.defaultNotes && appConfig.defaultNotes.base) || [
+            'Give only as directed. Do not exceed the prescribed dose.',
+            'Do not combine with sedatives, sleeping pills, or painkillers.',
+            'Store securely away from children and other pets.',
+            "Inform your treating veterinarian about using CBD for your pet's medical condition.",
+            'Limit to only one type of CBD product within a 24-hour period.',
+            'Ensure fresh drinking water is available and let your pet rest after dosing.'
+        ];
+        return noteConfig.map(formatBulletNote).join('\n');
+    }
+
     const noteConfig = appConfig.defaultNotes || {};
     const baseNotes = (noteConfig.base || []).map(formatBulletNote);
     
@@ -1746,6 +1808,9 @@ function resetForm() {
 
 // Add function to update notes based on selected medications
 function updateNotesBasedOnMedications() {
+    if (isVetMode) {
+        return;
+    }
     const gender = document.getElementById('patientGender').value;
     const medicationSelects = document.querySelectorAll('.medication-name');
     const selectedMeds = Array.from(medicationSelects)
@@ -1928,6 +1993,55 @@ document.addEventListener('DOMContentLoaded', function() {
         successOverlay.addEventListener('click', function(e) {
             if (e.target === successOverlay) {
                 hideSuccessLightbox();
+            }
+        });
+    }
+
+    // Wire login role selection buttons
+    const doctorLoginBtn = document.getElementById('doctorLoginBtn');
+    const vetLoginBtn = document.getElementById('vetLoginBtn');
+    const loginBackBtn = document.getElementById('loginBackBtn');
+    const loginRoleSelection = document.getElementById('loginRoleSelection');
+    const loginSignInStep = document.getElementById('loginSignInStep');
+    const loginTitle = document.getElementById('loginTitle');
+    const loginSubtitle = document.getElementById('loginSubtitle');
+
+    if (doctorLoginBtn) {
+        doctorLoginBtn.addEventListener('click', () => {
+            selectedLoginRole = 'doctor';
+            isVetMode = false;
+            if (loginTitle) loginTitle.textContent = 'Doctor Login';
+            if (loginSubtitle) loginSubtitle.textContent = 'Please sign in with your Qurist doctor account to continue';
+            if (loginRoleSelection) loginRoleSelection.style.display = 'none';
+            if (loginSignInStep) loginSignInStep.style.display = 'block';
+            if (window.google && google.accounts && google.accounts.id) {
+                google.accounts.id.prompt();
+            }
+        });
+    }
+
+    if (vetLoginBtn) {
+        vetLoginBtn.addEventListener('click', () => {
+            selectedLoginRole = 'vet';
+            isVetMode = true;
+            if (loginTitle) loginTitle.textContent = 'Veterinarian Login';
+            if (loginSubtitle) loginSubtitle.textContent = 'Please sign in with your Qurist veterinarian account to continue';
+            if (loginRoleSelection) loginRoleSelection.style.display = 'none';
+            if (loginSignInStep) loginSignInStep.style.display = 'block';
+            if (window.google && google.accounts && google.accounts.id) {
+                google.accounts.id.prompt();
+            }
+        });
+    }
+
+    if (loginBackBtn) {
+        loginBackBtn.addEventListener('click', () => {
+            if (loginSignInStep) loginSignInStep.style.display = 'none';
+            if (loginRoleSelection) loginRoleSelection.style.display = 'block';
+            const msg = document.getElementById('loginMessage');
+            if (msg) {
+                msg.textContent = '';
+                msg.className = 'login-message';
             }
         });
     }
@@ -2489,25 +2603,44 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.setLineWidth(0.5);
         doc.line(20, 40, 190, 40);
         
-        doc.autoTable({
-            body: [
-                [
-                    { content: "Name:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                    patientName, 
-                    { content: "Age:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                    patientAge, 
-                    { content: "Sex:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                    patientGender
-                ],
-                [
-                    { content: "Height:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                    patientHeight ? `${patientHeight} cm` : "", 
-                    { content: "Weight:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
-                    patientWeight ? `${patientWeight} kg` : "",
-                    "", 
-                    ""
-                ]
+        const patientTableBody = isVetMode ? [
+            [
+                { content: "Name:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                patientName, 
+                { content: "Age:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                patientAge, 
+                { content: "Sex:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                patientGender
             ],
+            [
+                { content: "Weight:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                patientWeight ? `${patientWeight} kg` : "",
+                "", 
+                "",
+                "", 
+                ""
+            ]
+        ] : [
+            [
+                { content: "Name:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                patientName, 
+                { content: "Age:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                patientAge, 
+                { content: "Sex:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                patientGender
+            ],
+            [
+                { content: "Height:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                patientHeight ? `${patientHeight} cm` : "", 
+                { content: "Weight:", styles: { fontStyle: 'bold', textColor: [2, 113, 128] } }, 
+                patientWeight ? `${patientWeight} kg` : "",
+                "", 
+                ""
+            ]
+        ];
+
+        doc.autoTable({
+            body: patientTableBody,
             startY: 42,
             margin: { left: 20, right: 20 },
             theme: 'plain',
@@ -2714,7 +2847,7 @@ document.addEventListener('DOMContentLoaded', function() {
             drawDoctorSeal(doc, 185, finalY - 10, selectedDoctor);
             
             doc.line(140, finalY, 190, finalY);
-            doc.text("Doctor's Signature", 165, finalY + 5, { align: 'center' });
+            doc.text(isVetMode ? "Veterinarian's Signature" : "Doctor's Signature", 165, finalY + 5, { align: 'center' });
         }
         
         // Add new sections for telehealth notice, travel disclaimer, and disclaimer
@@ -2751,7 +2884,9 @@ document.addEventListener('DOMContentLoaded', function() {
         doc.text('Telehealth Notice:', 20, finalY);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0);
-        const telehealthNotice = appConfig.pdfText.telehealthNotice || '';
+        const telehealthNotice = (isVetMode && appConfig.pdfText && appConfig.pdfText.telehealthNotice) 
+            ? appConfig.pdfText.telehealthNotice 
+            : (appConfig.pdfText.telehealthNotice || '');
         const splitTelehealthNotice = doc.splitTextToSize(telehealthNotice, 170);
         doc.text(splitTelehealthNotice, 20, finalY + 7);
         
@@ -2782,18 +2917,20 @@ document.addEventListener('DOMContentLoaded', function() {
         // Update finalY after final safety advisory
         finalY += 7 + (splitFinalSafetyAdvisory.length * 5) + SECTION_GAP;
 
-        // Add occupational safety advisory
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(2, 113, 128);
-        doc.text('Occupational Safety Advisory:', 20, finalY);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(0);
+        // Add occupational safety advisory (omitted in pet mode)
         const safetyDisclaimer = appConfig.pdfText.occupationalSafetyAdvisory || '';
-        const splitSafetyDisclaimer = doc.splitTextToSize(safetyDisclaimer, 170);
-        doc.text(splitSafetyDisclaimer, 20, finalY + 7);
+        if (!isVetMode && safetyDisclaimer) {
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(2, 113, 128);
+            doc.text('Occupational Safety Advisory:', 20, finalY);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(0);
+            const splitSafetyDisclaimer = doc.splitTextToSize(safetyDisclaimer, 170);
+            doc.text(splitSafetyDisclaimer, 20, finalY + 7);
 
-        // Update finalY after safety advisory
-        finalY += 7 + (splitSafetyDisclaimer.length * 5) + SECTION_GAP;
+            // Update finalY after safety advisory
+            finalY += 7 + (splitSafetyDisclaimer.length * 5) + SECTION_GAP;
+        }
         
         // Add Important Patient Agreement and Disclaimer
         doc.setFont('helvetica', 'bold');
@@ -2858,7 +2995,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Before saving the PDF, add the final page count
         doc.setProperties({
             title: `Prescription for ${patientName}`,
-            subject: 'Medical Prescription',
+            subject: isVetMode ? 'Veterinary Prescription' : 'Medical Prescription',
             creator: 'Qurist Digital Prescription System'
         });
 
@@ -2973,7 +3110,7 @@ function drawDoctorSeal(doc, x, y, doctorInfo) {
     
     // Registration info
     ctx.font = '20px Arial';
-    ctx.fillText('Certified Medical Practitioner', 0, 0);
+    ctx.fillText(isVetMode ? 'Certified Veterinary Practitioner' : 'Certified Medical Practitioner', 0, 0);
     ctx.fillText(`Reg No: ${doctorInfo.regNo}`, 0, 40);
     ctx.fillText('Hemp Health Pvt Ltd', 0, 80);
     
