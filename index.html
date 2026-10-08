@@ -127,7 +127,7 @@
             <div class="admin-header">
                 <div>
                     <h2 id="adminModalTitle">Admin Mode</h2>
-                    <p>Edit safe app content. Changes are saved to the App Config tab in Google Sheets.</p>
+                    <p id="adminModalSubtitle">Edit safe app content. Changes are saved to the App Config tab in Google Sheets.</p>
                 </div>
                 <button type="button" id="closeAdminBtn" class="secondary">Close Admin</button>
             </div>
@@ -136,13 +136,13 @@
 
             <div class="admin-doctor-setup">
                 <div class="admin-group-header">
-                    <h3>Doctor setup</h3>
-                    <p>Manage doctor access, Drive folders, and signatures before editing the rest of the app settings.</p>
+                    <h3 id="adminDoctorSetupHeading">Doctor setup</h3>
+                    <p id="adminDoctorSetupSubheading">Manage doctor access, Drive folders, and signatures before editing the rest of the app settings.</p>
                 </div>
                 <div class="form-group admin-wide">
-                    <label for="adminDoctors">Doctor setup</label>
+                    <label for="adminDoctors" id="adminDoctorSetupLabel">Doctor setup</label>
                     <textarea id="adminDoctors"></textarea>
-                    <small>Click Edit to add, remove, or update doctors, Drive folders, and signatures. Uploaded signatures are saved in the Google Sheets app config.</small>
+                    <small id="adminDoctorSetupHelp">Click Edit to add, remove, or update doctors, Drive folders, and signatures. Uploaded signatures are saved in the Google Sheets app config.</small>
                 </div>
             </div>
 
@@ -175,13 +175,13 @@
                             <small>Edit the dosage text shown in the dropdown and saved to the PDF.</small>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group admin-human-only">
                             <label for="adminPillDosages">Pill dosage options</label>
                             <textarea id="adminPillDosages" placeholder="One dosage option per line"></textarea>
                             <small>Edit the dosage text shown in the dropdown and saved to the PDF.</small>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group admin-human-only">
                             <label for="adminGummyDosages">Gummy dosage options</label>
                             <textarea id="adminGummyDosages" placeholder="One dosage option per line"></textarea>
                             <small>Edit the dosage text shown in the dropdown and saved to the PDF.</small>
@@ -193,7 +193,7 @@
                             <small>Click Edit to manage instructions used for oil medications.</small>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group admin-human-only">
                             <label for="adminOtherInstructions">Pill/gummy instruction checklist</label>
                             <textarea id="adminOtherInstructions" placeholder="One instruction per line"></textarea>
                             <small>Click Edit to manage instructions used for non-oil medications.</small>
@@ -213,17 +213,17 @@
                             <small>Bullets are added automatically.</small>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group admin-human-only">
                             <label for="adminFemaleNote">Female patient note</label>
                             <textarea id="adminFemaleNote"></textarea>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group admin-human-only">
                             <label for="adminOilNotes">Oil-specific notes</label>
                             <textarea id="adminOilNotes" placeholder="One note per line"></textarea>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group admin-human-only">
                             <label for="adminPillGummyNotes">Pill/gummy-specific notes</label>
                             <textarea id="adminPillGummyNotes" placeholder="One note per line"></textarea>
                         </div>
@@ -257,7 +257,7 @@
                             <textarea id="adminSafetyAdvisory"></textarea>
                         </div>
 
-                        <div class="form-group admin-wide">
+                        <div class="form-group admin-wide admin-human-only">
                             <label for="adminOccupationalSafety">Occupational Safety Advisory</label>
                             <textarea id="adminOccupationalSafety"></textarea>
                         </div>

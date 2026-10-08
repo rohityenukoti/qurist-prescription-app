@@ -135,8 +135,9 @@ body {
     text-decoration: underline;
 }
 
-/* Vet mode: hide height field and related elements */
-body.vet-mode .form-group-height {
+/* Vet mode: hide height field, human-only admin settings, and related elements */
+body.vet-mode .form-group-height,
+body.vet-mode .admin-human-only {
     display: none !important;
 }
 

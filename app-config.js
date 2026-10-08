@@ -200,8 +200,19 @@
         return merged;
     }
 
-    // Vet-mode overrides for the pet prescription workflow.
+    // Vet-mode default configuration for pet prescriptions.
     const defaultVetConfig = {
+        version: 1,
+        complaints: [
+            'Anxiety / Stress',
+            'Pain / Inflammation',
+            'Arthritis / Joint Pain',
+            'Seizures / Epilepsy',
+            'Aggression / Behavioral Issues',
+            'Appetite Loss / Nausea',
+            'Sleep Issues / Restlessness',
+            'Skin Allergies / Itching'
+        ],
         medications: [
             {
                 id: 'Dog CBD Oil Small',
@@ -241,10 +252,26 @@
                 { value: '0.75 ml' },
                 { value: '1 ml' }
             ],
+            pills: [],
+            gummies: [],
             other: []
         },
+        instructionOptions: {
+            oil: [
+                'Orally / with food -- Twice daily',
+                'Orally / with food -- Once daily in morning',
+                'Orally / with food -- Once daily at night',
+                'Orally / with food -- As and When Required (SOS)',
+                'Mixed with food or treats -- Twice daily',
+                'External Application -- As and When Required (SOS)'
+            ],
+            other: [
+                'Orally / with food -- Twice daily',
+                'Orally / with food -- Once daily in morning',
+                'Orally / with food -- Once daily at night'
+            ]
+        },
         defaultNotes: {
-            // Static notes for vet prescriptions – not dynamically assembled.
             base: [
                 'Give only as directed. Do not exceed the prescribed dose.',
                 'Do not combine with sedatives, sleeping pills, or painkillers.',
@@ -253,15 +280,44 @@
                 'Limit to only one type of CBD product within a 24-hour period.',
                 'Ensure fresh drinking water is available and let your pet rest after dosing.'
             ],
-            // No gender-specific or medication-type-specific notes in vet mode.
             female: '',
             oil: [],
             pillsOrGummies: []
         },
         pdfText: {
             telehealthNotice: 'This prescription is generated on tele-consultation (no physical contact with the pet).',
-            // Occupational safety advisory is intentionally blank – not shown in pet Rx.
-            occupationalSafetyAdvisory: ''
+            travelAdvisory: 'For domestic travel within India: Please carry this prescription with you when traveling with Qurist products. International travel advisory: Qurist products contain CBD. Check laws and regulations of all points in your journey. Approved for use in India. Kindly ensure compliance with local regulations when abroad.',
+            safetyAdvisory: 'In case of adverse reaction or accidental overdose by a pet, seek immediate veterinary attention and carry the product label.',
+            occupationalSafetyAdvisory: '',
+            patientAgreement: 'This veterinary prescription is solely for therapeutic purposes and should not be used for medico-legal purposes.',
+            contactInformation: 'For any further queries, please contact: +91 8448298093'
+        },
+        doctors: [
+            {
+                id: 'dr_vet',
+                name: 'Dr. Qurist Vet',
+                designation: 'BVSc & AH',
+                regNo: 'VET/12345',
+                email: 'vet@qurist.in',
+                driveFolderId: '',
+                signatureDataUrl: ''
+            },
+            {
+                id: 'dr_rohit_vet',
+                name: 'Dr. Rohit Yenukoti',
+                designation: 'BVSc & AH',
+                regNo: '134654',
+                email: 'rohityenukoti@qurist.in',
+                driveFolderId: '12FVNhVQmwUF_6iw7Ky3JcCRdfc7-Hn9P',
+                signatureDataUrl: ''
+            }
+        ],
+        footer: {
+            companyName: 'Hemp Health Pvt. Ltd.',
+            cin: 'CIN No. U2423 | HR2020PTC087774',
+            website: 'www.qurist.in',
+            instagram: '@quristcbd',
+            facebook: '@quristcbd'
         }
     };
 
@@ -270,11 +326,14 @@
     window.cloneQuristConfig = function (config) {
         return deepClone(config || defaultAppConfig);
     };
+    window.cloneQuristVetConfig = function (config) {
+        return deepClone(config || defaultVetConfig);
+    };
     window.mergeQuristConfig = function (overrides) {
         return mergeConfig(defaultAppConfig, overrides);
     };
     window.mergeQuristVetConfig = function (overrides) {
-        const baseVet = mergeConfig(defaultAppConfig, defaultVetConfig);
-        return overrides ? mergeConfig(baseVet, overrides) : baseVet;
+        return mergeConfig(defaultVetConfig, overrides);
     };
 })();
+

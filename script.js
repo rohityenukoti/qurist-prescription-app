@@ -7,6 +7,7 @@ const VET_EMAILS = ['vet@qurist.in', 'rohityenukoti@qurist.in'];
 const ALLOWED_EMAILS = DOCTOR_EMAILS;
 const ADMIN_EMAILS = ['rohit@qurist.in', 'rohityenukoti@qurist.in', 'samisht@qurist.in', 'shivam@qurist.in', 'hello@qurist.in'];
 const CONFIG_CACHE_KEY = 'quristAppConfig';
+const VET_CONFIG_CACHE_KEY = 'quristVetAppConfig';
 let appConfig = normalizeOilDosageValues(window.mergeQuristConfig ? window.mergeQuristConfig() : {});
 let appConfigMeta = { source: 'defaults', updatedAt: '' };
 let medicationCounter = 1;
@@ -72,9 +73,10 @@ function isEmailAllowed(email, allowedEmails) {
     );
 }
 
-function getCachedConfig() {
+function getCachedConfig(isVet = isVetMode) {
     try {
-        const cached = localStorage.getItem(CONFIG_CACHE_KEY);
+        const key = isVet ? VET_CONFIG_CACHE_KEY : CONFIG_CACHE_KEY;
+        const cached = localStorage.getItem(key);
         return cached ? JSON.parse(cached) : null;
     } catch (error) {
         console.warn('Unable to read cached app config:', error);
@@ -82,9 +84,10 @@ function getCachedConfig() {
     }
 }
 
-function setCachedConfig(config, updatedAt = '') {
+function setCachedConfig(config, updatedAt = '', isVet = isVetMode) {
     try {
-        localStorage.setItem(CONFIG_CACHE_KEY, JSON.stringify({ config, updatedAt }));
+        const key = isVet ? VET_CONFIG_CACHE_KEY : CONFIG_CACHE_KEY;
+        localStorage.setItem(key, JSON.stringify({ config, updatedAt }));
     } catch (error) {
         console.warn('Unable to cache app config:', error);
     }
@@ -137,30 +140,33 @@ function applyAppConfig(config, meta = {}) {
     updateAdminStatus();
 }
 
-function loadCachedAppConfig() {
-    const cached = getCachedConfig();
+function loadCachedAppConfig(isVet = isVetMode) {
+    const cached = getCachedConfig(isVet);
     if (cached && cached.config) {
-        applyAppConfig(cached.config, { source: 'cache', updatedAt: cached.updatedAt || '' });
+        applyAppConfig(cached.config, { source: 'cache', updatedAt: cached.updatedAt || '', isVet });
+    } else {
+        applyAppConfig({}, { source: 'defaults', isVet });
     }
 }
 
 async function loadRemoteAppConfig(options = {}) {
     const silent = Boolean(options.silent);
+    const isVet = options.isVet !== undefined ? options.isVet : isVetMode;
     try {
         if (typeof window.getAppConfigFromSheet !== 'function') {
             throw new Error('App config sheet helper is unavailable.');
         }
 
-        const result = await window.getAppConfigFromSheet({ prompt: options.prompt });
+        const result = await window.getAppConfigFromSheet({ prompt: options.prompt, isVet });
         if (result && result.config) {
-            applyAppConfig(result.config, { source: 'google-sheet', updatedAt: result.updatedAt || '' });
-            setCachedConfig(appConfig, result.updatedAt || '');
+            applyAppConfig(result.config, { source: 'google-sheet', updatedAt: result.updatedAt || '', isVet });
+            setCachedConfig(appConfig, result.updatedAt || '', isVet);
         }
         return result;
     } catch (error) {
         console.warn('Unable to load remote app config:', error);
         if (!silent) {
-            alert('Could not load admin settings from Google Sheets. The app is using the latest local/default settings.');
+            alert(`Could not load ${isVet ? 'veterinarian ' : ''}admin settings from Google Sheets. The app is using the latest local/default settings.`);
         }
         return null;
     }
@@ -217,8 +223,14 @@ function renderDoctorOptions() {
         return;
     }
 
+    const doctorSelectLabel = document.querySelector('label[for="doctorSelect"]');
+    if (doctorSelectLabel) {
+        doctorSelectLabel.textContent = isVetMode ? 'Select Veterinarian:' : 'Select Doctor:';
+    }
+
     const selectedValue = doctorSelect.value;
-    doctorSelect.innerHTML = '<option value="">Select Doctor</option>';
+    const defaultOptionText = isVetMode ? 'Select Veterinarian' : 'Select Doctor';
+    doctorSelect.innerHTML = `<option value="">${defaultOptionText}</option>`;
     (appConfig.doctors || []).forEach(doctor => {
         addSelectOption(doctorSelect, doctor.id, doctor.name || doctor.id);
     });
@@ -419,7 +431,8 @@ function getAdminDoctorRowTitle(row) {
     const name = row.querySelector('[data-field="name"]')?.value.trim() || '';
     const email = row.querySelector('[data-field="email"]')?.value.trim() || '';
     const id = row.querySelector('[data-field="id"]')?.value.trim() || '';
-    return name || email || id || 'New doctor';
+    const defaultLabel = isVetMode ? 'New veterinarian' : 'New doctor';
+    return name || email || id || defaultLabel;
 }
 
 function updateAdminDoctorRowTitle(row) {
@@ -537,19 +550,24 @@ function createAdminDoctorOptionRow(doctor = {}) {
     details.className = 'admin-doctor-details';
     details.hidden = true;
 
-    details.appendChild(createAdminDoctorField('Doctor ID', createAdminOptionCell('input', {
+    const idLabel = isVetMode ? 'Veterinarian ID' : 'Doctor ID';
+    const nameLabel = isVetMode ? 'Veterinarian name' : 'Doctor name';
+    const emailLabel = isVetMode ? 'Veterinarian email' : 'Doctor email';
+    const desigPlaceholder = isVetMode ? 'BVSc & AH' : 'MBBS, MD';
+
+    details.appendChild(createAdminDoctorField(idLabel, createAdminOptionCell('input', {
         name: 'id',
-        placeholder: 'Doctor ID',
+        placeholder: idLabel,
         value: doctor.id || ''
     })));
-    details.appendChild(createAdminDoctorField('Doctor name', createAdminOptionCell('input', {
+    details.appendChild(createAdminDoctorField(nameLabel, createAdminOptionCell('input', {
         name: 'name',
-        placeholder: 'Doctor name',
+        placeholder: nameLabel,
         value: doctor.name || ''
     })));
     details.appendChild(createAdminDoctorField('Designation', createAdminOptionCell('input', {
         name: 'designation',
-        placeholder: 'Designation',
+        placeholder: desigPlaceholder,
         value: doctor.designation || ''
     })));
     details.appendChild(createAdminDoctorField('Registration no.', createAdminOptionCell('input', {
@@ -557,9 +575,9 @@ function createAdminDoctorOptionRow(doctor = {}) {
         placeholder: 'Registration no.',
         value: doctor.regNo || ''
     })));
-    details.appendChild(createAdminDoctorField('Doctor email', createAdminOptionCell('input', {
+    details.appendChild(createAdminDoctorField(emailLabel, createAdminOptionCell('input', {
         name: 'email',
-        placeholder: 'Doctor email',
+        placeholder: emailLabel,
         value: doctor.email || ''
     })));
     details.appendChild(createAdminDoctorField('Drive folder ID', createAdminOptionCell('input', {
@@ -627,7 +645,8 @@ function getAdminOptionRemoveLabel(row, editor) {
         const name = row.querySelector('[data-field="name"]')?.value.trim();
         const email = row.querySelector('[data-field="email"]')?.value.trim();
         const id = row.querySelector('[data-field="id"]')?.value.trim();
-        return name || email || id || editor.singularLabel || 'this doctor';
+        const defaultLabel = isVetMode ? 'this veterinarian' : 'this doctor';
+        return name || email || id || editor.singularLabel || defaultLabel;
     }
 
     const value = row.querySelector('[data-field="value"]')?.value.trim();
@@ -1023,30 +1042,105 @@ function serializeFooter(footer) {
 }
 
 function populateAdminForm(config = appConfig) {
+    const isVet = isVetMode;
+    const modalTitle = document.getElementById('adminModalTitle');
+    const modalSubtitle = document.getElementById('adminModalSubtitle');
+    const doctorHeading = document.getElementById('adminDoctorSetupHeading');
+    const doctorSubheading = document.getElementById('adminDoctorSetupSubheading');
+    const doctorLabel = document.getElementById('adminDoctorSetupLabel');
+    const doctorHelp = document.getElementById('adminDoctorSetupHelp');
+
+    if (modalTitle) {
+        modalTitle.textContent = isVet ? 'Admin Mode (Veterinarian)' : 'Admin Mode';
+    }
+    if (modalSubtitle) {
+        modalSubtitle.textContent = isVet
+            ? 'Edit safe app content for veterinary prescriptions. Changes are saved to the Vet App Config tab in Google Sheets.'
+            : 'Edit safe app content. Changes are saved to the App Config tab in Google Sheets.';
+    }
+    if (doctorHeading) {
+        doctorHeading.textContent = isVet ? 'Veterinarian setup' : 'Doctor setup';
+    }
+    if (doctorSubheading) {
+        doctorSubheading.textContent = isVet
+            ? 'Manage veterinarian access, Drive folders, and signatures for pet prescriptions.'
+            : 'Manage doctor access, Drive folders, and signatures before editing the rest of the app settings.';
+    }
+    if (doctorLabel) {
+        doctorLabel.textContent = isVet ? 'Veterinarian setup' : 'Doctor setup';
+    }
+    if (doctorHelp) {
+        doctorHelp.textContent = isVet
+            ? 'Click Edit to add, remove, or update veterinarians, Drive folders, and signatures. Uploaded signatures are saved in the Google Sheets app config.'
+            : 'Click Edit to add, remove, or update doctors, Drive folders, and signatures. Uploaded signatures are saved in the Google Sheets app config.';
+    }
+
+    if (ADMIN_OPTION_EDITORS.adminDoctors) {
+        ADMIN_OPTION_EDITORS.adminDoctors.singularLabel = isVet ? 'veterinarian' : 'doctor';
+        ADMIN_OPTION_EDITORS.adminDoctors.pluralLabel = isVet ? 'veterinarians' : 'doctors';
+        ADMIN_OPTION_EDITORS.adminDoctors.addLabel = isVet ? 'Add veterinarian' : 'Add doctor';
+    }
+
     setElementValue('adminComplaints', serializeLines(config.complaints));
     setElementValue('adminMedications', serializeMedicationLines(config.medications));
     setElementValue('adminDoctors', serializeDoctorJson(config.doctors));
-    setElementValue('adminOilDosages', serializeDosageLines(config.dosageOptions.oil));
-    setElementValue('adminPillDosages', serializeDosageLines(config.dosageOptions.pills));
-    setElementValue('adminGummyDosages', serializeDosageLines(config.dosageOptions.gummies));
-    setElementValue('adminOilInstructions', serializeLines(config.instructionOptions.oil));
-    setElementValue('adminOtherInstructions', serializeLines(config.instructionOptions.other));
-    setElementValue('adminBaseNotes', serializeLines(config.defaultNotes.base));
-    setElementValue('adminFemaleNote', config.defaultNotes.female || '');
-    setElementValue('adminOilNotes', serializeLines(config.defaultNotes.oil));
-    setElementValue('adminPillGummyNotes', serializeLines(config.defaultNotes.pillsOrGummies));
+    setElementValue('adminOilDosages', serializeDosageLines(config.dosageOptions ? config.dosageOptions.oil : []));
+    setElementValue('adminPillDosages', serializeDosageLines(config.dosageOptions ? config.dosageOptions.pills : []));
+    setElementValue('adminGummyDosages', serializeDosageLines(config.dosageOptions ? config.dosageOptions.gummies : []));
+    setElementValue('adminOilInstructions', serializeLines(config.instructionOptions ? config.instructionOptions.oil : []));
+    setElementValue('adminOtherInstructions', serializeLines(config.instructionOptions ? config.instructionOptions.other : []));
+    setElementValue('adminBaseNotes', serializeLines(config.defaultNotes ? config.defaultNotes.base : []));
+    setElementValue('adminFemaleNote', (config.defaultNotes && config.defaultNotes.female) || '');
+    setElementValue('adminOilNotes', serializeLines(config.defaultNotes ? config.defaultNotes.oil : []));
+    setElementValue('adminPillGummyNotes', serializeLines(config.defaultNotes ? config.defaultNotes.pillsOrGummies : []));
     setElementValue('adminFooter', serializeFooter(config.footer));
-    setElementValue('adminTelehealthNotice', config.pdfText.telehealthNotice);
-    setElementValue('adminTravelAdvisory', config.pdfText.travelAdvisory);
-    setElementValue('adminSafetyAdvisory', config.pdfText.safetyAdvisory);
-    setElementValue('adminOccupationalSafety', config.pdfText.occupationalSafetyAdvisory);
-    setElementValue('adminPatientAgreement', config.pdfText.patientAgreement);
-    setElementValue('adminContactInformation', config.pdfText.contactInformation);
+    setElementValue('adminTelehealthNotice', (config.pdfText && config.pdfText.telehealthNotice) || '');
+    setElementValue('adminTravelAdvisory', (config.pdfText && config.pdfText.travelAdvisory) || '');
+    setElementValue('adminSafetyAdvisory', (config.pdfText && config.pdfText.safetyAdvisory) || '');
+    setElementValue('adminOccupationalSafety', (config.pdfText && config.pdfText.occupationalSafetyAdvisory) || '');
+    setElementValue('adminPatientAgreement', (config.pdfText && config.pdfText.patientAgreement) || '');
+    setElementValue('adminContactInformation', (config.pdfText && config.pdfText.contactInformation) || '');
     renderAllAdminOptionEditors();
 }
 
 function buildConfigFromAdminForm() {
     syncAllAdminOptionEditors();
+    if (isVetMode) {
+        const currentDefaults = window.cloneQuristVetConfig ? window.cloneQuristVetConfig(window.QURIST_DEFAULT_VET_CONFIG) : {};
+        const config = {
+            version: 1,
+            complaints: parseLines(getElementValue('adminComplaints')),
+            medications: parseMedicationLines(getElementValue('adminMedications')),
+            dosageOptions: {
+                oil: parseDosageLines(getElementValue('adminOilDosages')),
+                pills: [],
+                gummies: [],
+                other: []
+            },
+            instructionOptions: {
+                oil: parseLines(getElementValue('adminOilInstructions')),
+                other: []
+            },
+            defaultNotes: {
+                base: parseLines(getElementValue('adminBaseNotes')).map(note => note.replace(/^•\s*/, '')),
+                female: '',
+                oil: [],
+                pillsOrGummies: []
+            },
+            pdfText: {
+                telehealthNotice: getElementValue('adminTelehealthNotice').trim(),
+                travelAdvisory: getElementValue('adminTravelAdvisory').trim(),
+                safetyAdvisory: getElementValue('adminSafetyAdvisory').trim(),
+                occupationalSafetyAdvisory: '',
+                patientAgreement: getElementValue('adminPatientAgreement').trim(),
+                contactInformation: getElementValue('adminContactInformation').trim()
+            },
+            doctors: parseDoctorJson(getElementValue('adminDoctors')),
+            footer: parseFooter(getElementValue('adminFooter'))
+        };
+        return config;
+    }
+
     const currentDefaults = window.cloneQuristConfig ? window.cloneQuristConfig(window.QURIST_DEFAULT_APP_CONFIG) : {};
     const config = {
         version: 1,
@@ -1083,59 +1177,60 @@ function buildConfigFromAdminForm() {
     return normalizeOilDosageValues(config);
 }
 
-function validateAdminConfig(config) {
+function validateAdminConfig(config, isVet = isVetMode) {
     const errors = [];
     const validMedicationTypes = ['oil', 'pills', 'gummies', 'other'];
 
-    if (!config.complaints.length) {
+    if (!config.complaints || !config.complaints.length) {
         errors.push('Add at least one complaint option.');
     }
 
-    if (!config.medications.length) {
+    if (!config.medications || !config.medications.length) {
         errors.push('Add at least one medication option.');
     }
 
     const medicationIds = new Set();
-    config.medications.forEach((medication, index) => {
+    (config.medications || []).forEach((medication, index) => {
         if (!medication.label) {
             errors.push(`Medication row ${index + 1} is missing a dropdown name.`);
         }
         if (!validMedicationTypes.includes(medication.type)) {
             errors.push(`Medication "${medication.label}" must use type oil, pills, gummies, or other.`);
         }
-        if (medicationIds.has(medication.id.toLowerCase())) {
+        if (medicationIds.has((medication.id || medication.label).toLowerCase())) {
             errors.push(`Medication "${medication.label}" is duplicated.`);
         }
-        medicationIds.add(medication.id.toLowerCase());
+        medicationIds.add((medication.id || medication.label).toLowerCase());
     });
 
-    if (!config.doctors.length) {
-        errors.push('Add at least one doctor.');
+    const practitionerLabel = isVet ? 'veterinarian' : 'doctor';
+    if (!config.doctors || !config.doctors.length) {
+        errors.push(`Add at least one ${practitionerLabel}.`);
     }
 
     const doctorIds = new Set();
     const doctorEmails = new Set();
-    config.doctors.forEach((doctor, index) => {
+    (config.doctors || []).forEach((doctor, index) => {
         if (!doctor.id) {
-            errors.push(`Doctor row ${index + 1} is missing a doctor ID.`);
+            errors.push(`${isVet ? 'Veterinarian' : 'Doctor'} row ${index + 1} is missing an ID.`);
         }
         if (!doctor.name) {
-            errors.push(`Doctor row ${index + 1} is missing a name.`);
+            errors.push(`${isVet ? 'Veterinarian' : 'Doctor'} row ${index + 1} is missing a name.`);
         }
         if (!doctor.email) {
-            errors.push(`Doctor "${doctor.name || index + 1}" is missing an email.`);
+            errors.push(`${isVet ? 'Veterinarian' : 'Doctor'} "${doctor.name || index + 1}" is missing an email.`);
         }
         if (doctor.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(doctor.email)) {
-            errors.push(`Doctor "${doctor.name || index + 1}" has an invalid email.`);
+            errors.push(`${isVet ? 'Veterinarian' : 'Doctor'} "${doctor.name || index + 1}" has an invalid email.`);
         }
         if (doctor.id && doctorIds.has(doctor.id.toLowerCase())) {
-            errors.push(`Doctor ID "${doctor.id}" is duplicated.`);
+            errors.push(`${isVet ? 'Veterinarian' : 'Doctor'} ID "${doctor.id}" is duplicated.`);
         }
         if (doctor.email && doctorEmails.has(doctor.email.toLowerCase())) {
-            errors.push(`Doctor email "${doctor.email}" is duplicated.`);
+            errors.push(`${isVet ? 'Veterinarian' : 'Doctor'} email "${doctor.email}" is duplicated.`);
         }
         if (doctor.signatureDataUrl && !/^data:image\/(png|jpe?g);base64,/i.test(doctor.signatureDataUrl)) {
-            errors.push(`Doctor "${doctor.name || index + 1}" has an invalid signature image. Use PNG or JPG.`);
+            errors.push(`${isVet ? 'Veterinarian' : 'Doctor'} "${doctor.name || index + 1}" has an invalid signature image. Use PNG or JPG.`);
         }
         if (doctor.id) {
             doctorIds.add(doctor.id.toLowerCase());
@@ -1145,37 +1240,50 @@ function validateAdminConfig(config) {
         }
     });
 
-    ['oil', 'pills', 'gummies'].forEach(type => {
-        if (!config.dosageOptions[type].length) {
+    const dosageTypesToCheck = isVet ? ['oil'] : ['oil', 'pills', 'gummies'];
+    dosageTypesToCheck.forEach(type => {
+        if (!config.dosageOptions || !config.dosageOptions[type] || !config.dosageOptions[type].length) {
             errors.push(`Add at least one ${type} dosage option.`);
+        } else {
+            config.dosageOptions[type].forEach((dosage, index) => {
+                if (!dosage.value) {
+                    errors.push(`${type} dosage row ${index + 1} must include dosage text.`);
+                }
+            });
         }
-        config.dosageOptions[type].forEach((dosage, index) => {
-            if (!dosage.value) {
-                errors.push(`${type} dosage row ${index + 1} must include dosage text.`);
-            }
-        });
     });
 
-    if (!config.instructionOptions.oil.length) {
+    if (!config.instructionOptions || !config.instructionOptions.oil || !config.instructionOptions.oil.length) {
         errors.push('Add at least one oil instruction.');
     }
-    if (!config.instructionOptions.other.length) {
-        errors.push('Add at least one pill/gummy instruction.');
+    if (!isVet) {
+        if (!config.instructionOptions || !config.instructionOptions.other || !config.instructionOptions.other.length) {
+            errors.push('Add at least one pill/gummy instruction.');
+        }
     }
-    if (!config.defaultNotes.base.length) {
+
+    if (!config.defaultNotes || !config.defaultNotes.base || !config.defaultNotes.base.length) {
         errors.push('Add at least one default additional instruction.');
     }
 
-    Object.entries(config.pdfText).forEach(([key, value]) => {
-        if (!value) {
-            errors.push(`The ${key} text cannot be empty.`);
-        }
-        if (value.length > 1200) {
-            errors.push(`The ${key} text is too long. Keep it under 1200 characters.`);
-        }
-    });
+    if (!config.pdfText) {
+        errors.push('PDF text settings cannot be empty.');
+    } else {
+        const requiredPdfKeys = isVet
+            ? ['telehealthNotice', 'travelAdvisory', 'safetyAdvisory', 'patientAgreement', 'contactInformation']
+            : ['telehealthNotice', 'travelAdvisory', 'safetyAdvisory', 'occupationalSafetyAdvisory', 'patientAgreement', 'contactInformation'];
 
-    if (!config.footer.companyName || !config.footer.website) {
+        requiredPdfKeys.forEach(key => {
+            const value = config.pdfText[key];
+            if (!value) {
+                errors.push(`The ${key} text cannot be empty.`);
+            } else if (value.length > 1200) {
+                errors.push(`The ${key} text is too long. Keep it under 1200 characters.`);
+            }
+        });
+    }
+
+    if (!config.footer || !config.footer.companyName || !config.footer.website) {
         errors.push('Footer must include at least company name and website.');
     }
 
@@ -1229,7 +1337,7 @@ function renderAdminVersionHistoryList(versions = []) {
     if (!versions.length) {
         const emptyState = document.createElement('div');
         emptyState.className = 'admin-version-empty';
-        emptyState.textContent = 'No saved app config versions found yet.';
+        emptyState.textContent = `No saved ${isVetMode ? 'vet ' : ''}app config versions found yet.`;
         list.appendChild(emptyState);
         return;
     }
@@ -1277,18 +1385,23 @@ async function loadAdminVersionHistory() {
         throw new Error('App config version history helper is unavailable.');
     }
 
-    setAdminVersionHistoryMessage('Loading app config versions...');
+    setAdminVersionHistoryMessage(`Loading ${isVetMode ? 'vet ' : ''}app config versions...`);
     renderAdminVersionHistoryList([]);
-    const versions = await window.listAppConfigVersions();
-    setAdminVersionHistoryMessage(versions.length ? '' : 'No version history is available yet.');
+    const versions = await window.listAppConfigVersions({ isVet: isVetMode });
+    setAdminVersionHistoryMessage(versions.length ? '' : `No ${isVetMode ? 'vet ' : ''}version history is available yet.`);
     renderAdminVersionHistoryList(versions);
 }
 
 async function openAdminVersionHistory() {
     const overlay = document.getElementById('adminVersionHistoryLightbox');
     const closeButton = document.getElementById('closeAdminVersionHistoryBtn');
+    const titleEl = document.getElementById('adminVersionHistoryTitle');
     if (!overlay) {
         return;
+    }
+
+    if (titleEl) {
+        titleEl.textContent = isVetMode ? 'Vet App Config Version History' : 'App Config Version History';
     }
 
     overlay.classList.add('show');
@@ -1310,18 +1423,18 @@ async function restoreAdminConfigVersion(sheetTitle, versionLabel) {
         throw new Error('App config restore helpers are unavailable.');
     }
 
-    const version = await window.getAppConfigVersionFromSheet(sheetTitle);
-    const errors = validateAdminConfig(version.config);
+    const version = await window.getAppConfigVersionFromSheet(sheetTitle, { isVet: isVetMode });
+    const errors = validateAdminConfig(version.config, isVetMode);
     if (errors.length) {
         throw new Error(`Selected version cannot be restored: ${errors.join(' ')}`);
     }
 
-    const result = await window.restoreAppConfigVersion(sheetTitle);
-    applyAppConfig(result.config, { source: 'google-sheet', updatedAt: result.updatedAt });
-    setCachedConfig(appConfig, result.updatedAt);
+    const result = await window.restoreAppConfigVersion(sheetTitle, { isVet: isVetMode });
+    applyAppConfig(result.config, { source: 'google-sheet', updatedAt: result.updatedAt, isVet: isVetMode });
+    setCachedConfig(appConfig, result.updatedAt, isVetMode);
     populateAdminForm();
     closeAdminVersionHistory();
-    showAdminMessage(`Restored app config from ${versionLabel}. A new latest version was created.`);
+    showAdminMessage(`Restored ${isVetMode ? 'vet ' : ''}app config from ${versionLabel}. A new latest version was created.`);
 }
 
 function updateAdminVisibility() {
@@ -1343,7 +1456,7 @@ function updateAdminStatus() {
         : appConfigMeta.source === 'cache'
             ? 'cached settings'
             : 'default app settings';
-    status.textContent = `Using ${sourceLabel}.${updatedText}`;
+    status.textContent = `Using ${isVetMode ? 'vet ' : ''}${sourceLabel}.${updatedText}`;
     status.style.display = currentUser && currentUser.isAdmin ? 'block' : 'none';
 }
 
@@ -1422,11 +1535,11 @@ async function handleCredentialResponse(response) {
         if (!isAuthorized) {
             document.getElementById('loginMessage').textContent = 'Checking latest veterinarian access...';
             document.getElementById('loginMessage').className = 'login-message';
-            await loadRemoteAppConfig({ silent: true });
+            await loadRemoteAppConfig({ silent: true, isVet: true });
             isAuthorized = isEmailAllowed(email, getConfiguredVetEmails()) || isAdmin;
 
             if (!isAuthorized) {
-                await loadRemoteAppConfig({ silent: true, prompt: 'consent' });
+                await loadRemoteAppConfig({ silent: true, prompt: 'consent', isVet: true });
                 isAuthorized = isEmailAllowed(email, getConfiguredVetEmails()) || isAdmin;
             }
         }
@@ -1435,11 +1548,11 @@ async function handleCredentialResponse(response) {
         if (!isAuthorized) {
             document.getElementById('loginMessage').textContent = 'Checking latest doctor access...';
             document.getElementById('loginMessage').className = 'login-message';
-            await loadRemoteAppConfig({ silent: true });
+            await loadRemoteAppConfig({ silent: true, isVet: false });
             isAuthorized = isEmailAllowed(email, getConfiguredDoctorEmails()) || isAdmin;
 
             if (!isAuthorized) {
-                await loadRemoteAppConfig({ silent: true, prompt: 'consent' });
+                await loadRemoteAppConfig({ silent: true, prompt: 'consent', isVet: false });
                 isAuthorized = isEmailAllowed(email, getConfiguredDoctorEmails()) || isAdmin;
             }
         }
@@ -1460,10 +1573,10 @@ async function handleCredentialResponse(response) {
 
         if (isVetMode) {
             document.body.classList.add('vet-mode');
-            applyAppConfig({}, { isVet: true });
+            loadCachedAppConfig(true);
         } else {
             document.body.classList.remove('vet-mode');
-            applyAppConfig({}, { isVet: false });
+            loadCachedAppConfig(false);
         }
 
         setDoctorSelectionForCurrentUser();
@@ -1480,7 +1593,7 @@ async function handleCredentialResponse(response) {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('appContainer').style.display = 'block';
             updateAdminVisibility();
-            loadRemoteAppConfig({ silent: true });
+            loadRemoteAppConfig({ silent: true, isVet: isVetRole });
         }, 1000);
     } else {
         // Invalid login
@@ -1514,6 +1627,7 @@ function logout() {
     isVetMode = false;
     selectedLoginRole = 'doctor';
     document.body.classList.remove('vet-mode');
+    loadCachedAppConfig(false);
 
     const roleSelection = document.getElementById('loginRoleSelection');
     const signInStep = document.getElementById('loginSignInStep');
@@ -2010,6 +2124,8 @@ document.addEventListener('DOMContentLoaded', function () {
         doctorLoginBtn.addEventListener('click', () => {
             selectedLoginRole = 'doctor';
             isVetMode = false;
+            document.body.classList.remove('vet-mode');
+            loadCachedAppConfig(false);
             if (loginTitle) loginTitle.textContent = 'Doctor Login';
             if (loginSubtitle) loginSubtitle.textContent = 'Please sign in with your Qurist doctor account to continue';
             if (loginRoleSelection) loginRoleSelection.style.display = 'none';
@@ -2024,6 +2140,8 @@ document.addEventListener('DOMContentLoaded', function () {
         vetLoginBtn.addEventListener('click', () => {
             selectedLoginRole = 'vet';
             isVetMode = true;
+            document.body.classList.add('vet-mode');
+            loadCachedAppConfig(true);
             if (loginTitle) loginTitle.textContent = 'Veterinarian Login';
             if (loginSubtitle) loginSubtitle.textContent = 'Please sign in with your Qurist veterinarian account to continue';
             if (loginRoleSelection) loginRoleSelection.style.display = 'none';
@@ -2113,7 +2231,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const sheetTitle = restoreButton.dataset.sheetTitle;
             const versionLabel = restoreButton.dataset.versionLabel || 'the selected version';
             const confirmed = await confirmAdminAction(
-                `Restore app config from ${versionLabel}? This will immediately publish it as the latest version.`,
+                `Restore ${isVetMode ? 'vet ' : ''}app config from ${versionLabel}? This will immediately publish it as the latest version.`,
                 {
                     title: 'Confirm restore',
                     confirmLabel: 'Restore'
@@ -2126,7 +2244,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const originalText = restoreButton.textContent;
             restoreButton.disabled = true;
             restoreButton.textContent = 'Restoring...';
-            setAdminVersionHistoryMessage('Restoring selected app config version...');
+            setAdminVersionHistoryMessage(`Restoring selected ${isVetMode ? 'vet ' : ''}app config version...`);
             try {
                 await restoreAdminConfigVersion(sheetTitle, versionLabel);
             } catch (error) {
@@ -2142,7 +2260,7 @@ document.addEventListener('DOMContentLoaded', function () {
         saveAdminConfigBtn.addEventListener('click', async function () {
             clearAdminMessage();
             const nextConfig = buildConfigFromAdminForm();
-            const errors = validateAdminConfig(nextConfig);
+            const errors = validateAdminConfig(nextConfig, isVetMode);
             if (errors.length) {
                 showAdminMessage(errors.join(' '), 'error');
                 return;
@@ -2155,11 +2273,11 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (typeof window.saveAppConfigToSheet !== 'function') {
                     throw new Error('App config save helper is unavailable.');
                 }
-                const result = await window.saveAppConfigToSheet(nextConfig);
-                applyAppConfig(nextConfig, { source: 'google-sheet', updatedAt: result.updatedAt });
-                setCachedConfig(appConfig, result.updatedAt);
+                const result = await window.saveAppConfigToSheet(nextConfig, { isVet: isVetMode });
+                applyAppConfig(nextConfig, { source: 'google-sheet', updatedAt: result.updatedAt, isVet: isVetMode });
+                setCachedConfig(appConfig, result.updatedAt, isVetMode);
                 populateAdminForm();
-                showAdminMessage('Admin settings saved successfully.');
+                showAdminMessage(`${isVetMode ? 'Veterinarian' : 'Doctor'} admin settings saved successfully.`);
             } catch (error) {
                 console.error('Unable to save admin settings:', error);
                 showAdminMessage(`Could not save admin settings: ${error.message}`, 'error');

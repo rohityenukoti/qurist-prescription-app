@@ -19,6 +19,8 @@ const DRIVE_FOLDER_IDS = {
 };
 const APP_CONFIG_SHEET_TITLE = 'App Config';
 const APP_CONFIG_VERSION_PREFIX = `${APP_CONFIG_SHEET_TITLE} `;
+const VET_APP_CONFIG_SHEET_TITLE = 'Vet App Config';
+const VET_APP_CONFIG_VERSION_PREFIX = `${VET_APP_CONFIG_SHEET_TITLE} `;
 const APP_CONFIG_CHUNK_SIZE = 40000;
 
 
@@ -606,17 +608,26 @@ async function updateSheetValues(spreadsheetId, range, values, retryCount = 0) {
     return response.json();
 }
 
-function getAppConfigVersionSheetTitle(updatedAt = new Date().toISOString()) {
-    const safeTimestamp = updatedAt.replace(/[:.]/g, '-');
-    return `${APP_CONFIG_VERSION_PREFIX}${safeTimestamp}`;
+function getConfigSheetTitle(isVet = false) {
+    return isVet ? VET_APP_CONFIG_SHEET_TITLE : APP_CONFIG_SHEET_TITLE;
 }
 
-function getAppConfigVersionTimestamp(sheetTitle) {
-    if (!sheetTitle || !sheetTitle.startsWith(APP_CONFIG_VERSION_PREFIX)) {
+function getConfigVersionPrefix(isVet = false) {
+    return isVet ? VET_APP_CONFIG_VERSION_PREFIX : APP_CONFIG_VERSION_PREFIX;
+}
+
+function getAppConfigVersionSheetTitle(updatedAt = new Date().toISOString(), isVet = false) {
+    const safeTimestamp = updatedAt.replace(/[:.]/g, '-');
+    return `${getConfigVersionPrefix(isVet)}${safeTimestamp}`;
+}
+
+function getAppConfigVersionTimestamp(sheetTitle, isVet = false) {
+    const prefix = getConfigVersionPrefix(isVet);
+    if (!sheetTitle || !sheetTitle.startsWith(prefix)) {
         return '';
     }
 
-    const safeTimestamp = sheetTitle.slice(APP_CONFIG_VERSION_PREFIX.length);
+    const safeTimestamp = sheetTitle.slice(prefix.length);
     const match = safeTimestamp.match(/^(\d{4}-\d{2}-\d{2})T(\d{2})-(\d{2})-(\d{2})-(\d{3})Z$/);
     if (!match) {
         return '';
@@ -676,13 +687,14 @@ function serializeAppConfigRows(config, updatedAt) {
     ];
 }
 
-async function listAppConfigVersions() {
+async function listAppConfigVersions(options = {}) {
+    const isVet = Boolean(options && options.isVet);
     const spreadsheet = await fetchSpreadsheetMetadata(APP_CONFIG_SPREADSHEET_ID);
     return (spreadsheet.sheets || [])
         .map(sheet => (sheet.properties || {}).title || '')
         .map(title => ({
             sheetTitle: title,
-            updatedAt: getAppConfigVersionTimestamp(title)
+            updatedAt: getAppConfigVersionTimestamp(title, isVet)
         }))
         .filter(version => version.updatedAt)
         .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
@@ -692,14 +704,15 @@ async function listAppConfigVersions() {
         }));
 }
 
-async function getAppConfigVersionFromSheet(sheetTitle) {
-    if (!getAppConfigVersionTimestamp(sheetTitle)) {
+async function getAppConfigVersionFromSheet(sheetTitle, options = {}) {
+    const isVet = Boolean(options && options.isVet);
+    if (!getAppConfigVersionTimestamp(sheetTitle, isVet)) {
         throw new Error('Invalid app config version sheet.');
     }
 
     const range = getSheetRange(sheetTitle, 'A:C');
     const result = await fetchSheetValues(APP_CONFIG_SPREADSHEET_ID, range);
-    const parsedConfig = parseAppConfigRows(result.values || [], getAppConfigVersionTimestamp(sheetTitle));
+    const parsedConfig = parseAppConfigRows(result.values || [], getAppConfigVersionTimestamp(sheetTitle, isVet));
 
     if (!parsedConfig || !parsedConfig.config) {
         throw new Error('The selected app config version is empty.');
@@ -712,9 +725,10 @@ async function getAppConfigVersionFromSheet(sheetTitle) {
     };
 }
 
-async function restoreAppConfigVersion(sheetTitle) {
-    const version = await getAppConfigVersionFromSheet(sheetTitle);
-    const saved = await saveAppConfigToSheet(version.config);
+async function restoreAppConfigVersion(sheetTitle, options = {}) {
+    const isVet = Boolean(options && options.isVet);
+    const version = await getAppConfigVersionFromSheet(sheetTitle, { isVet });
+    const saved = await saveAppConfigToSheet(version.config, { isVet });
     return {
         ...saved,
         config: version.config,
@@ -728,20 +742,28 @@ async function restoreAppConfigVersion(sheetTitle) {
 
 async function getAppConfigFromSheet(options = {}) {
     await ensureAccessToken(options);
-    const versions = await listAppConfigVersions();
+    const isVet = Boolean(options && options.isVet);
+    const versions = await listAppConfigVersions({ isVet });
     if (versions.length) {
-        return getAppConfigVersionFromSheet(versions[0].sheetTitle);
+        return getAppConfigVersionFromSheet(versions[0].sheetTitle, { isVet });
     }
 
-    await ensureSheetExists(APP_CONFIG_SPREADSHEET_ID, APP_CONFIG_SHEET_TITLE);
-    const range = getSheetRange(APP_CONFIG_SHEET_TITLE, 'A:C');
+    const baseTitle = getConfigSheetTitle(isVet);
+    const spreadsheet = await fetchSpreadsheetMetadata(APP_CONFIG_SPREADSHEET_ID);
+    const hasBaseSheet = (spreadsheet.sheets || []).some(sheet => (sheet.properties || {}).title === baseTitle);
+    if (!hasBaseSheet) {
+        return null;
+    }
+
+    const range = getSheetRange(baseTitle, 'A:C');
     const result = await fetchSheetValues(APP_CONFIG_SPREADSHEET_ID, range);
     return parseAppConfigRows(result.values || []);
 }
 
-async function saveAppConfigToSheet(config) {
+async function saveAppConfigToSheet(config, options = {}) {
+    const isVet = Boolean(options && options.isVet);
     const updatedAt = new Date().toISOString();
-    const sheetTitle = getAppConfigVersionSheetTitle(updatedAt);
+    const sheetTitle = getAppConfigVersionSheetTitle(updatedAt, isVet);
     const values = serializeAppConfigRows(config, updatedAt);
 
     await ensureSheetExists(APP_CONFIG_SPREADSHEET_ID, sheetTitle);
