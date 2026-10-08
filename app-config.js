@@ -294,11 +294,11 @@
         },
         doctors: [
             {
-                id: 'dr_vet',
-                name: 'Dr. Qurist Vet',
+                id: 'dr_satish',
+                name: 'Dr. Satish Verma',
                 designation: 'BVSc & AH',
-                regNo: 'VET/12345',
-                email: 'vet@qurist.in',
+                regNo: 'DVC/0481',
+                email: 'drsatish@qurist.in',
                 driveFolderId: '',
                 signatureDataUrl: ''
             },
