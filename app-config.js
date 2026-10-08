@@ -1,6 +1,6 @@
 // Safe defaults for admin-editable app content.
 // The app always starts from this config and then merges any saved Google Sheets config over it.
-(function() {
+(function () {
     const defaultAppConfig = {
         version: 1,
         complaints: [
@@ -267,13 +267,13 @@
 
     window.QURIST_DEFAULT_APP_CONFIG = defaultAppConfig;
     window.QURIST_DEFAULT_VET_CONFIG = defaultVetConfig;
-    window.cloneQuristConfig = function(config) {
+    window.cloneQuristConfig = function (config) {
         return deepClone(config || defaultAppConfig);
     };
-    window.mergeQuristConfig = function(overrides) {
+    window.mergeQuristConfig = function (overrides) {
         return mergeConfig(defaultAppConfig, overrides);
     };
-    window.mergeQuristVetConfig = function(overrides) {
+    window.mergeQuristVetConfig = function (overrides) {
         const baseVet = mergeConfig(defaultAppConfig, defaultVetConfig);
         return overrides ? mergeConfig(baseVet, overrides) : baseVet;
     };
